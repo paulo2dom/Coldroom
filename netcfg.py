@@ -1,4 +1,4 @@
-"""Redes Wi-Fi conhecidas do Pico W.
+"""Redes Wi-Fi conhecidas do simulador (Pico W ou ESP32-S3).
 
 Origem das redes:
   - config.py: WIFI_NETWORKS (predefinidas, editadas no PC)
@@ -86,6 +86,10 @@ def connect(wlan, nets, timeout_s=15):
     if not nets:
         return None
     try:
+        wlan.disconnect()   # ESP32: o scan falha se ainda estiver a tentar ligar
+    except OSError:
+        pass
+    try:
         seen = {}
         for r in wlan.scan():
             ssid = r[0].decode('utf-8', 'replace')
@@ -107,7 +111,8 @@ def connect(wlan, nets, timeout_s=15):
         while time.ticks_diff(time.ticks_ms(), t0) < timeout_s * 1000:
             if wlan.isconnected():
                 return n
-            if wlan.status() < 0:  # password errada / falha
+            st = wlan.status()
+            if st < 0 or 200 <= st < 1000:  # falha (Pico: <0; ESP32: 200..212)
                 break
             time.sleep(0.25)
         print('Wi-Fi: falhou %s (estado %d)' % (n['ssid'], wlan.status()))

@@ -10,6 +10,8 @@ O **Pico W é o simulador** de uma única câmara frigorífica **CF-01**. Não n
 - `location.py`: localização do equipamento (país/zona/loja/local/equipamento) a partir do `config.py`
 - `netcfg.py`: redes Wi-Fi conhecidas (config.py + networks.json) e escolha da melhor
 - `ble_setup.py`: configuração por Bluetooth LE
+- `board.py`: diferenças de hardware (LED e botão) entre Pico W e ESP32-S3
+- `esp32/config.py`: configuração do ESP32-S3 Supermini (CF-07), enviada como `config.py`
 - `desktop/coldroom_ble.py`: cliente no PC para configurar redes do Pico e do Raspberry Pi por Bluetooth
 - `index.html`: dashboard standalone (HTML, CSS, JavaScript; sem CDN)
 - `config.example.py`: modelo de configuração Wi-Fi
@@ -47,6 +49,38 @@ mpremote connect COM7 reset
 5. Para ver o IP e mensagens: `mpremote connect COM7` (ou consultar no router). Aceder a `http://IP_DO_PICO/`.
 
 **Importante**: guardar `main.py` no Pico faz arrancar o simulador automaticamente após reiniciar.
+
+## Instalar no ESP32-S3 Supermini (CF-07)
+
+O mesmo código corre no ESP32-S3 (4 MB flash, 2 MB PSRAM); só o `board.py` trata as diferenças:
+
+| | Pico W | ESP32-S3 Supermini |
+|---|---|---|
+| LED (Bluetooth ativo) | LED da placa | LED RGB WS2812 no GPIO48 (azul) |
+| Botão para abrir o Bluetooth | BOOTSEL 1 s | BOOT (GPIO0) 1 s |
+| Equipamento / tópico | `cf-01` (talho) | `cf-07` (charcutaria) |
+| ID MQTT (`DEVICE_NAME`) | ColdRoom-SIM-01 | ColdRoom-SIM-07 |
+
+O `DEVICE_NAME` e o `LOCATION_EQUIPMENT` têm de ser diferentes em cada placa: com o mesmo ID MQTT o broker desliga uma delas.
+
+1. Firmware (uma vez): `py -m pip install esptool`, descarregar `ESP32_GENERIC_S3-…-v1.29.0.bin` de https://micropython.org/download/ESP32_GENERIC_S3/ e:
+
+```powershell
+py -m esptool --chip esp32s3 --port COM15 erase-flash
+py -m esptool --chip esp32s3 --port COM15 --baud 460800 write-flash 0 ESP32_GENERIC_S3-20260824-v1.29.0.bin
+```
+
+   Se não ligar: manter BOOT premido, carregar em RESET, largar BOOT. **Depois do MicroPython a porta muda** (aqui: COM15 → COM16).
+
+2. Copiar os ficheiros (o `config.py` vem da pasta `esp32`):
+
+```powershell
+mpremote connect COM16 cp simulator.py mqtt_pub.py location.py netcfg.py ble_setup.py board.py index.html main.py : + cp esp32\config.py :config.py + reset
+```
+
+3. Bluetooth: com duas placas ligadas, indicar o nome: `py desktop\coldroom_ble.py pico --name ColdRoom-CF-07 status`.
+
+Se o LED da tua placa for simples (não RGB), pôr `LED_RGB = False` em `esp32/config.py`.
 
 ## O que simula
 

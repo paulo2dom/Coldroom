@@ -14,6 +14,7 @@
     ],
     "micropico.pyIgnore": [
         "desktop",
+        "esp32",
         "tests",
         "__pycache__",
         "README.md",

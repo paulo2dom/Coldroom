@@ -1,9 +1,8 @@
-"""ColdRoom SIM - Webserver HTTP no Raspberry Pi Pico W / MicroPython."""
+"""ColdRoom SIM - Webserver HTTP em MicroPython (Raspberry Pi Pico W ou ESP32-S3)."""
 import gc
 import json
 import machine
 import network
-import rp2
 import socket
 import time
 from simulator import ColdRoom
@@ -11,8 +10,10 @@ from mqtt_pub import MQTTPub
 from location import load as load_location
 import netcfg
 import config
+import board
 
 sim = ColdRoom()
+sim.device_label = board.NAME + ' / ColdRoom SIM'
 LOCATION, MQTT_TOPIC = load_location(config)
 DEFAULT_MQTT = getattr(config, 'MQTT_HOST', None)
 MQTT_INTERVAL = max(1, getattr(config, 'MQTT_INTERVAL', 5))
@@ -22,8 +23,7 @@ mqtt_next = time.ticks_ms()
 # --- Bluetooth (configuracao de redes) ---------------------------------------
 BLE_NAME = 'ColdRoom-' + LOCATION['equipamento'].upper()
 BLE_BOOT_S = getattr(config, 'BLE_BOOT_WINDOW_S', 180)   # janela apos arrancar
-BLE_WINDOW_S = getattr(config, 'BLE_WINDOW_S', 300)      # sem Wi-Fi / BOOTSEL
-led = machine.Pin('LED', machine.Pin.OUT)
+BLE_WINDOW_S = getattr(config, 'BLE_WINDOW_S', 300)      # sem Wi-Fi / botao BOOT(SEL)
 ble = None
 reset_at = None
 active_net = None
@@ -47,7 +47,7 @@ def ble_command(c):
     cmd = c.get('cmd')
     nets = netcfg.load(config)
     if cmd == 'status':
-        return {'ok': True, 'device': 'pico', 'name': BLE_NAME, 'topic': MQTT_TOPIC,
+        return {'ok': True, 'device': board.NAME, 'name': BLE_NAME, 'topic': MQTT_TOPIC,
                 'ssid': active_net['ssid'] if active_net else None,
                 'ip': wlan.ifconfig()[0] if wlan.isconnected() else None,
                 'mqtt_host': MQTT_HOST, 'mqtt_connected': mqtt is not None,
@@ -76,7 +76,7 @@ def ble_step():
         except Exception as e:
             r = {'ok': False, 'error': str(e)}
         ble.reply(r)
-    led.value(1 if ble.enabled else 0)   # LED aceso = BLE ativo
+    board.led(ble.enabled)   # LED aceso = BLE ativo
     if reset_at is not None and time.ticks_diff(time.ticks_ms(), reset_at) >= 0:
         machine.reset()
 
@@ -102,7 +102,7 @@ if not active_net:
     machine.reset()
 MQTT_HOST = active_net.get('mqtt_host') or DEFAULT_MQTT
 print('Wi-Fi: %s, IP %s, broker %s' % (active_net['ssid'], wlan.ifconfig()[0], MQTT_HOST))
-print('ColdRoom SIM em http://%s:%d' % (wlan.ifconfig()[0], config.HTTP_PORT))
+print('ColdRoom SIM (%s) em http://%s:%d' % (board.NAME, wlan.ifconfig()[0], config.HTTP_PORT))
 
 sock = socket.socket()
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -226,12 +226,12 @@ def serve(client):
 bootsel_since = None
 while True:
     ble_step()
-    # BOOTSEL premido 1 s -> abre a janela BLE
-    if rp2.bootsel_button():
+    # BOOTSEL (Pico) / BOOT (ESP32) premido 1 s -> abre a janela BLE
+    if board.button():
         if bootsel_since is None:
             bootsel_since = time.ticks_ms()
         elif time.ticks_diff(time.ticks_ms(), bootsel_since) > 1000 and not (ble and ble.enabled):
-            ble_open('BOOTSEL', BLE_WINDOW_S)
+            ble_open(board.BUTTON_NAME, BLE_WINDOW_S)
     else:
         bootsel_since = None
     now = time.ticks_ms()
