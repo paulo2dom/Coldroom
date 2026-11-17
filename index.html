@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ColdRoom | Simulador de Câmara Frigorífica</title>
+<style>
+:root{color-scheme:dark;--bg:#050d18;--bg2:#081423;--panel:#0c1c2e;--line:#1a3149;--line2:#274764;--ink:#eaf3fb;--ink2:#b4c7d8;--muted:#7d95ab;--ice:#4fd1ff;--iced:#1d5a78;--iceb:#0b2a3d;--ok:#35d07f;--okb:#0c2a20;--okl:#1d5a41;--warn:#ffb020;--warnb:#2c2109;--warnl:#6b4d12;--crit:#ff5f57;--critb:#2e1414;--critl:#7a2c29;--supply:#7ee0a3;--ret:#ffb454;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(1200px 600px at 70% -10%,#0d2540 0,transparent 60%),var(--bg);background-attachment:fixed;color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:grid;grid-template-columns:304px minmax(0,1fr)}
+button,select,input{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}
+.ic.lg{width:26px;height:26px;stroke-width:1.6}
+/* barra lateral: consola de simulação */
+.sb{position:sticky;top:0;height:100vh;overflow:auto;background:linear-gradient(180deg,#081728,#06101d);border-right:1px solid var(--line);padding-bottom:14px}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 18px 16px;border-bottom:1px solid var(--line)}
+.logo{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--ice);background:var(--iceb);border:1px solid var(--iced);box-shadow:0 0 18px rgba(79,209,255,.18)}
+.brand b{font-size:19px}.brand b span{color:var(--ice)}
+.brand small{display:block;color:var(--muted);font-size:11px;margin-top:-2px}
+.sb h4{margin:16px 18px 8px;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.sb h4 .ic{color:var(--ice);width:15px;height:15px}
+.sbx{padding:0 14px;display:grid;gap:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{font-size:12px;color:var(--ink2);display:block;margin-bottom:4px}
+input{width:100%;min-width:0;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:7px 9px}
+input:focus{outline:none;border-color:var(--ice)}
+button{cursor:pointer;border:1px solid var(--iced);background:var(--iceb);color:var(--ice);border-radius:8px;padding:8px 10px;font-size:12px;font-weight:650;width:100%}
+button:hover{background:#0f3850}
+button.sec{background:var(--panel);border-color:var(--line2);color:var(--ink)}
+button.sec:hover{border-color:var(--iced)}
+button.sel{background:var(--ice);color:#04202e;border-color:var(--ice)}
+button.danger{background:var(--critb);border-color:var(--critl);color:#ffb3ae}
+button.danger.act{background:var(--crit);color:#2a0705;border-color:var(--crit)}
+.cb{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;display:flex;flex-direction:column}
+.cb button{margin-top:auto}
+.cb strong{display:flex;align-items:center;gap:7px;font-size:12px;margin-bottom:8px;font-weight:600}
+.cb strong .ic{color:var(--ice);width:15px;height:15px}
+#feedback{margin:10px 18px 0;font-size:12px;color:var(--ink2);min-height:17px}
+/* topo */
+.mainc{min-width:0}
+header{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 22px;background:rgba(5,13,24,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:18px;font-weight:500;color:var(--ink2)}
+header h1 b{color:var(--ink)}
+header small{color:var(--muted);font-size:12px}
+.sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:700;letter-spacing:.03em;border:1px solid var(--line2);background:var(--panel);color:var(--ink2);white-space:nowrap}
+.pill.ice{color:var(--ice);border-color:var(--iced);background:var(--iceb)}
+.pill.amber{color:var(--warn);border-color:var(--warnl);background:var(--warnb)}
+.pill.ok{color:var(--ok);border-color:var(--ok);background:var(--okb);box-shadow:0 0 16px rgba(53,208,127,.18)}
+.pill.warn{color:var(--warn);border-color:var(--warn);background:var(--warnb)}
+.pill.crit{color:var(--crit);border-color:var(--critl);background:var(--critb)}
+main{padding:18px 22px 30px;max-width:1500px}
+.tile{background:linear-gradient(180deg,var(--panel),#0a1727);border:1px solid var(--line);border-radius:12px;padding:13px 15px;min-width:0}
+.lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.pt{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;margin:0 0 10px}
+.pt .ic{color:var(--ice)}
+.ibox{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;flex:none;color:var(--ice);background:var(--iceb);border:1px solid var(--iced)}
+.ibox.ok{color:var(--ok);background:var(--okb);border-color:var(--okl)}
+.ibox.warn{color:var(--warn);background:var(--warnb);border-color:var(--warnl)}
+.ibox.crit{color:var(--crit);background:var(--critb);border-color:var(--critl)}
+.hero{display:flex;flex-wrap:wrap;gap:16px 20px;align-items:center;margin-bottom:14px}
+.art{width:150px;height:104px;border-radius:12px;border:1px solid var(--line2);flex:none;box-shadow:0 0 24px rgba(79,209,255,.1)}
+.hero h2{margin:0;font-size:27px;line-height:1.15}
+.hero h2 span{color:var(--ice)}
+.ln{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;margin-top:5px}
+.ln .ic{color:var(--ice);width:15px;height:15px}
+.ln i{font-style:normal;color:var(--muted);font-size:11px;letter-spacing:.06em;font-weight:600}
+.ln code{font-family:var(--mono);font-size:12.5px;color:var(--ink2);overflow-wrap:anywhere}
+.chipsr{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px}
+.row{display:grid;gap:12px;margin-bottom:12px}
+.r1{grid-template-columns:minmax(0,1.25fr) repeat(3,minmax(0,1fr))}
+.r2{grid-template-columns:repeat(4,minmax(0,1fr))}
+.r3{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+.stat{display:flex;gap:13px;align-items:center}
+.stat .t{font-weight:650;white-space:nowrap}
+.v{display:flex;align-items:center;gap:6px;font-weight:700;margin-top:2px}
+.v.ok{color:var(--ok)}.v.bad{color:var(--crit)}
+.n{font-size:32px;font-weight:700;line-height:1;color:var(--ok)}
+.has .n{color:var(--crit)}
+.lst{border-left:1px solid var(--line2);padding-left:13px;font-size:13px;color:var(--ink2);min-width:0}
+.lst div{display:flex;gap:7px;align-items:baseline}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block;background:#6f8496}
+.dot.ok{background:var(--ok);box-shadow:0 0 6px rgba(53,208,127,.6)}
+.dot.warn{background:var(--warn);box-shadow:0 0 6px rgba(255,176,32,.6)}
+.dot.crit{background:var(--crit);box-shadow:0 0 6px rgba(255,95,87,.7)}
+.tt{display:flex;gap:13px;align-items:flex-start}
+.tt>.ic{color:var(--ice);margin-top:2px}
+.big{font-size:32px;font-weight:700;line-height:1.15;margin:3px 0 2px}
+.sub{color:var(--ink2);font-size:12.5px}
+.tt.main{border-color:var(--ice);background:linear-gradient(180deg,#0d3044,#0b2233);box-shadow:0 0 0 1px rgba(79,209,255,.2),0 0 26px rgba(79,209,255,.14)}
+.tt.main .lbl{color:var(--ink)}.tt.main .big{color:var(--ok)}
+.tt.main.warn .big{color:var(--warn)}
+.ch{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.ch .pt{margin:0}
+.cw{height:250px}
+canvas{width:100%;height:100%;display:block}
+.lg2{display:flex;flex-wrap:wrap;gap:13px;font-size:12px;color:var(--ink2)}
+.lg2 i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.lg2 i.d{background:repeating-linear-gradient(90deg,#9db2c4 0 4px,transparent 4px 7px)}
+.kv{display:grid;grid-template-columns:22px minmax(0,1fr) auto 44px;gap:10px;align-items:center;padding:8.5px 0;border-top:1px solid var(--line)}
+.kv>.ic{color:var(--ice)}
+.kv .k{color:var(--ink2)}
+.kv .x{text-align:right;font-weight:650}
+.s{display:flex;align-items:center;gap:7px;font-weight:650;color:var(--ink2)}
+.s.on{color:var(--ok)}.s.bad{color:var(--warn)}.s.err{color:var(--crit)}
+.bar{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden;width:70px}
+.bar span{display:block;height:100%;width:0;background:var(--ice);transition:width .3s}
+.ms{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.m{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.m .h{display:flex;gap:8px;align-items:center;color:var(--ink2);font-size:12px;line-height:1.25;min-height:30px}
+.m .h .ic{color:var(--ice)}
+.m .mv{font-size:20px;font-weight:700;margin-top:4px;white-space:nowrap}
+.m .mv small{font-size:13px;color:var(--ink2);font-weight:600;margin-left:3px}
+.note{color:var(--muted);font-size:11px;margin:8px 0 0}
+.ev{list-style:none;margin:0;padding:0;font-size:13px}
+.ev li{display:flex;gap:9px;align-items:baseline;padding:7px 0;border-top:1px solid var(--line)}
+.ev li:first-child{border-top:0}
+.ev .tm{color:var(--muted);font:12px var(--mono);flex:none;min-width:58px}
+.foot{text-align:center;font-size:11px;color:var(--muted);padding-top:6px}
+@media(max-width:1280px){.r1,.r2{grid-template-columns:repeat(2,minmax(0,1fr))}.r3{grid-template-columns:1fr}}
+@media(max-width:900px){body{display:flex;flex-direction:column}.mainc{order:1}.sb{order:2;position:static;height:auto;border-right:0;border-top:1px solid var(--line)}header{padding:10px 12px;position:static}main{padding:12px}.ms{grid-template-columns:repeat(2,minmax(0,1fr))}.chipsr{margin-left:0}}
+@media(max-width:480px){.r1,.r2{grid-template-columns:1fr}}
+</style></head>
+<body>
+<svg id="spr" width="0" height="0" style="position:absolute"></svg>
+<aside class="sb">
+<div class="brand"><span class="logo"><svg class="ic lg"><use href="#i-snow"/></svg></span><span><b>Cold<span>Room</span> SIM</b><small>Simulador embarcado · Pico W</small></span></div>
+<h4><svg class="ic"><use href="#i-sliders"/></svg>Consola de simulação</h4>
+<div class="sbx">
+<div class="g2"><div><label for="setpoint">Setpoint (°C)</label><input id="setpoint" type="number" min="-18" max="12" step="0.5" value="2"></div><div><label for="ambient">Ambiente (°C)</label><input id="ambient" type="number" min="15" max="40" step="1" value="24"></div></div>
+<div class="g2"><button onclick="setNumber('setpoint')">Aplicar setpoint</button><button onclick="setNumber('ambient')">Aplicar ambiente</button></div>
+</div>
+<h4><svg class="ic"><use href="#i-layers"/></svg>Velocidade do tempo</h4>
+<div class="sbx"><div class="g2" style="grid-template-columns:repeat(3,1fr)"><button class="sec" id="sp1" onclick="act('speed',1)">1×</button><button class="sec" id="sp5" onclick="act('speed',5)">5×</button><button class="sec" id="sp20" onclick="act('speed',20)">20×</button></div></div>
+<h4><svg class="ic"><use href="#i-gear"/></svg>Câmara</h4>
+<div class="sbx"><div class="g2">
+<div class="cb"><strong><svg class="ic"><use href="#i-door"/></svg>Porta</strong><button class="sec" id="doorbtn" onclick="toggle('door','door')">Abrir porta</button></div>
+<div class="cb"><strong><svg class="ic"><use href="#i-drop"/></svg>Degelo</strong><button class="sec" onclick="post({action:'defrost'})">Iniciar degelo</button></div>
+</div></div>
+<h4><svg class="ic"><use href="#i-warn"/></svg>Injetar falhas (testes)</h4>
+<div class="sbx"><div class="g2">
+<div class="cb"><strong><svg class="ic"><use href="#i-pulse"/></svg>Falha de fase</strong><button id="phasebtn" class="danger" onclick="toggle('fault','phase_fault')">Ativar</button></div>
+<div class="cb"><strong><svg class="ic"><use href="#i-drop"/></svg>Óleo baixo</strong><button id="oilbtn" class="danger" onclick="toggle('fault','oil_fault')">Ativar</button></div>
+<div class="cb"><strong><svg class="ic"><use href="#i-tank"/></svg>Baixo refrigerante</strong><button id="gasbtn" class="danger" onclick="toggle('fault','low_refrigerant')">Ativar</button></div>
+<div class="cb"><strong><svg class="ic"><use href="#i-gauge"/></svg>Alta pressão</strong><button id="hpbtn" class="danger" onclick="toggle('fault','hp_fault')">Ativar</button></div>
+</div>
+<div class="g2"><button class="sec" onclick="post({action:'reset'})">Rearmar proteção</button><button class="sec" onclick="if(confirm('Reiniciar toda a simulação?'))post({action:'restart'})">Reiniciar</button></div>
+</div>
+<p id="feedback" aria-live="polite"></p>
+</aside>
+
+<div class="mainc">
+<header>
+<div><h1>Simulador de <b>câmara frigorífica</b></h1><small>Refrigeração industrial · Simulador embarcado</small></div>
+<div class="sp"></div>
+<span class="pill ice">DADOS SIMULADOS</span>
+<span id="mqtt" class="pill" title="">MQTT —</span>
+<span id="conn" class="pill">A ligar…</span>
+</header>
+<main>
+<div class="hero">
+<svg class="art" viewBox="0 0 150 104" aria-hidden="true"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17395a"/><stop offset="1" stop-color="#0a1828"/></linearGradient></defs><rect width="150" height="104" fill="url(#hg)"/><rect x="30" y="10" width="34" height="11" rx="2" fill="#0e2236" stroke="#3b6a8f"/><path d="M36 15.5h22" stroke="#4fd1ff" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 3"/><rect x="20" y="21" width="110" height="66" rx="4" fill="#0e2236" stroke="#3b6a8f" stroke-width="1.5"/><path d="M46 21v66M104 21v66" stroke="#24486a"/><rect x="56" y="33" width="38" height="54" rx="2" fill="#123350" stroke="#4fd1ff" stroke-width="1.5"/><path d="M88 56v11" stroke="#4fd1ff" stroke-width="2.6" stroke-linecap="round"/><svg x="64" y="40" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4fd1ff" stroke-width="2" stroke-linecap="round"><use href="#i-snow"/></svg><path d="M10 91h130" stroke="#24486a" stroke-width="2" stroke-linecap="round"/></svg>
+<div style="min-width:0"><h2>Câmara frigorífica <span id="equip">CF-01</span></h2>
+<div class="sub">Simulação dinâmica de uma única câmara · Pico W</div>
+<div class="ln" id="crumbs" aria-label="Localização"></div>
+<div class="ln"><svg class="ic"><use href="#i-topic"/></svg><code id="topic"></code></div></div>
+<div class="chipsr"><span class="pill ice num"><svg class="ic"><use href="#i-clock"/></svg><span id="clock">T+—</span></span><span class="pill amber" id="mode">—</span><span class="pill num"><svg class="ic"><use href="#i-layers"/></svg><span id="speedtxt">—</span></span></div>
+</div>
+
+<div class="row r1">
+<div class="tile stat" id="alarmbox"><span class="ibox ok" id="alarmic"><svg class="ic lg"><use href="#i-bell"/></svg></span><div><div class="t">Alarmes ativos</div><div class="n num" id="alarmnum">0</div></div><div class="lst" id="alarms">Sem alarmes ativos</div></div>
+<div class="tile stat"><span class="ibox" id="phaseic"><svg class="ic lg"><use href="#i-pulse"/></svg></span><div><div class="t">Monitor de fases</div><div id="phase"></div></div></div>
+<div class="tile stat"><span class="ibox" id="oilic"><svg class="ic lg"><use href="#i-drop"/></svg></span><div><div class="t">Óleo do compressor</div><div id="oil"></div></div></div>
+<div class="tile stat"><span class="ibox" id="gasic"><svg class="ic lg"><use href="#i-tank"/></svg></span><div><div class="t">Refrigerante</div><div id="gas"></div></div></div>
+</div>
+
+<div class="row r2">
+<div class="tile tt main" id="roomtile"><svg class="ic lg"><use href="#i-thermo"/></svg><div><div class="lbl">Temperatura da câmara</div><div class="big num" id="room">—</div><div class="sub num" id="target">Setpoint —</div></div></div>
+<div class="tile tt"><svg class="ic lg"><use href="#i-wind"/></svg><div><div class="lbl">Ar insuflado</div><div class="big num" id="supply">—</div><div class="sub">Saída do evaporador</div></div></div>
+<div class="tile tt"><svg class="ic lg"><use href="#i-ret"/></svg><div><div class="lbl">Ar de retorno</div><div class="big num" id="return">—</div><div class="sub">Entrada no evaporador</div></div></div>
+<div class="tile tt"><svg class="ic lg"><use href="#i-snow"/></svg><div><div class="lbl">Evaporador / degelo</div><div class="big num" id="evap">—</div><div class="sub">Temperatura simulada da serpentina</div></div></div>
+</div>
+
+<div class="row r3">
+<div class="tile"><div class="ch"><h3 class="pt"><svg class="ic"><use href="#i-trend"/></svg>Tendência térmica</h3><div class="lg2"><span><i style="background:var(--ice)"></i>Câmara</span><span><i style="background:var(--supply)"></i>Insuflação</span><span><i style="background:var(--ret)"></i>Retorno</span><span><i class="d"></i>Setpoint</span></div></div><div class="cw"><canvas id="chart"></canvas></div></div>
+<div class="tile"><h3 class="pt" style="margin-bottom:4px"><svg class="ic"><use href="#i-gear"/></svg>Componentes e ciclo de refrigeração</h3>
+<div class="kv"><svg class="ic"><use href="#i-comp"/></svg><span class="k">Compressor</span><span id="comp"></span><span class="x num" id="capacity">—%</span></div>
+<div class="kv"><svg class="ic"><use href="#i-fan"/></svg><span class="k">Ventiladores</span><span id="fans"></span><span></span></div>
+<div class="kv"><svg class="ic"><use href="#i-valve"/></svg><span class="k">Válvula eletrónica EEV</span><span class="s"><span class="bar"><span id="valvebar"></span></span>Abertura</span><span class="x num" id="valve">—%</span></div>
+<div class="kv"><svg class="ic"><use href="#i-snow"/></svg><span class="k">Ciclo de degelo</span><span id="defrost"></span><span></span></div>
+<div class="kv"><svg class="ic"><use href="#i-door"/></svg><span class="k">Porta da câmara</span><span id="door"></span><span></span></div>
+<div class="kv"><svg class="ic"><use href="#i-shield"/></svg><span class="k">Proteção do compressor</span><span id="trip"></span><span></span></div>
+</div>
+</div>
+
+<div class="row"><div class="tile"><h3 class="pt"><svg class="ic"><use href="#i-bars"/></svg>Pressões, eficiência e energia</h3><div class="ms" id="ms"></div>
+<p class="note">* Índices sintéticos ilustrativos, sem tabela pressão-temperatura de refrigerante; não equivalem a cálculos físicos reais.</p></div></div>
+
+<div class="row"><div class="tile"><h3 class="pt"><svg class="ic"><use href="#i-list"/></svg>Registo de eventos</h3><ul class="ev" id="events"><li class="muted">A aguardar dados…</li></ul></div></div>
+<div class="foot">ColdRoom SIM · Simulador didático · Valores e alarmes fictícios · Não utilizar para controlo nem conformidade alimentar</div>
+</main>
+</div>
+<script>
+const IC={snow:"M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1M9.5 3.5L12 6l2.5-2.5M9.5 20.5L12 18l2.5 2.5M3.5 9.5L6 12l-2.5 2.5M20.5 9.5L18 12l2.5 2.5",
+bell:"M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 004 0",
+pulse:"M3 12h4l3-8 4 16 3-8h4",
+drop:"M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z",
+tank:"M7 7h10a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2zM9 7V4h6v3M5 12h14M5 16h14",
+thermo:"M14 14.8V5a2 2 0 00-4 0v9.8a4 4 0 104 0zM12 9v8",
+wind:"M3 8h10a3 3 0 10-3-3M3 12h15a3 3 0 11-3 3M3 16h7a2.5 2.5 0 11-2.5 2.5",
+ret:"M9 7l-5 5 5 5M4 12h16M13 6h7M13 18h7",
+fan:"M12 10.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM12 10.5C11 6 12.5 3 15.5 3s3 4.5-1 7M13.5 12c4.5-1 7.5.5 7.5 3.500s-4.5 3-7-1M12 13.5c1 4.5-.5 7.5-3.500 7.500s-3-4.5 1-7M10.5 12C6 13 3 11.5 3 8.5s4.5-3 7 1",
+valve:"M4 14h16v5H4zM12 14V8M8 8h8M12 8V5M9.5 5h5",
+door:"M6 3h12v18H6zM14.5 11v2M3 21h18",
+shield:"M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3zM9 12l2 2 4-4",
+gauge:"M4 18a8 8 0 1116 0M12 18l4-6M12 6v1.5M6 12H4.5M19.5 12H18",
+bolt:"M13 2L4 14h7l-1 8 9-12h-7l1-8z",
+clock:"M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5l3 2",
+layers:"M12 3l9 4.5-9 4.5-9-4.5L12 3zM3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5",
+pin:"M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11zM12 7.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z",
+topic:"M4 5h16v6H4zM4 13h16v6H4zM7.5 8h.01M7.5 16h.01M11 8h6M11 16h6",
+trend:"M3 17l6-6 4 4 8-8M15 7h6v6",
+bars:"M5 20V11M12 20V4M19 20v-7",
+list:"M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01",
+comp:"M5 9h14v10H5zM8 9V5.5h8V9M9 14h6M3 13h2M19 13h2",
+heat:"M8 3c-2 3 2 4 0 7M12 3c-2 3 2 4 0 7M16 3c-2 3 2 4 0 7M4 15h16M4 19h16",
+check:"M12 3a9 9 0 100 18 9 9 0 000-18zM8 12.5l2.5 2.5L16 9.500",
+warn:"M12 3l10 18H2L12 3zM12 10v5M12 18h.01",
+gear:"M12 9a3 3 0 100 6 3 3 0 000-6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1",
+plug:"M9 3v5M15 3v5M6 8h12v3a6 6 0 01-12 0V8zM12 17v4",
+timer:"M12 7a7 7 0 100 14 7 7 0 000-14zM12 11v3.5M9.5 3h5M12 3v4",
+sliders:"M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M16 4v4M10 10v4M18 16v4"};
+const E=id=>document.getElementById(id);
+E('spr').innerHTML=Object.keys(IC).map(n=>'<symbol id="i-'+n+'" viewBox="0 0 24 24"><path d="'+IC[n]+'"/></symbol>').join('');
+const I=n=>'<svg class="ic"><use href="#i-'+n+'"/></svg>';
+const F=(n,d=1)=>Number(n).toFixed(d);
+const esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let state=null,wasReady=false,locKey='';
+function text(id,x){E(id).textContent=x}
+function toggle(action,name){if(!state)return;post({action,name,value:!state[name]})}
+function act(action,value){post({action,value})}
+function setNumber(action){const value=Number(E(action).value);if(!Number.isFinite(value))return;post({action,value})}
+async function post(payload){try{const r=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const j=await r.json();text('feedback',j.error||'Comando de simulação aplicado');if(!r.ok)throw Error(j.error||r.status);await update()}catch(e){text('feedback','Erro: '+e.message)}}
+function nice(v){return String(v).replace(/-/g,' ').replace(/(^|\s)\S/g,c=>c.toUpperCase())}
+function st(id,cls,t){E(id).innerHTML='<span class="s '+cls+'"><span class="dot '+({on:'ok',bad:'warn',err:'crit'}[cls]||'')+'"></span>'+t+'</span>'}
+function stat(id,ok,bad){E(id).innerHTML='<div class="v '+(ok?'ok':'bad')+'">'+I(ok?'check':'warn')+(ok?'Normal':bad)+'</div>';E(id+'ic').className='ibox'+(ok?'':' crit')}
+function fault(id,on){const b=E(id);b.textContent=on?'Remover':'Ativar';b.classList.toggle('act',!!on)}
+function paintLoc(s){
+ const l=s.location;
+ if(l&&JSON.stringify(l)!==locKey){locKey=JSON.stringify(l);text('equip',l.equipamento.toUpperCase());
+  E('crumbs').innerHTML=I('pin')+[['PAÍS',l.pais.toUpperCase()],['ZONA',nice(l.zona)],['LOJA',nice(l.loja)],['LOCAL',nice(l.local)]].map(p=>'<i>'+p[0]+'</i><span>'+esc(p[1])+'</span>').join('<span class="muted">›</span>');
+  document.title='ColdRoom | '+l.equipamento.toUpperCase()+' · '+nice(l.loja)}
+ const m=s.mqtt,el=E('mqtt');
+ if(!m){text('mqtt','MQTT —');el.className='pill';return}
+ text('topic',m.enabled?'Tópico MQTT: '+m.topic+'/state':'Tópico (MQTT desativado): '+m.topic);
+ el.title=m.host?'Broker '+m.host:'';
+ if(!m.enabled){text('mqtt','MQTT DESATIVADO');el.className='pill'}
+ else if(m.connected){text('mqtt','● MQTT LIGADO');el.className='pill ok'}
+ else{text('mqtt','● MQTT SEM LIGAÇÃO');el.className='pill warn'}}
+function paint(s){
+ state=s;paintLoc(s);
+ text('conn','● SIMULADOR ONLINE');E('conn').className='pill ok';
+ text('clock','T+'+Math.floor(s.sim_seconds/3600)+'h '+String(Math.floor((s.sim_seconds%3600)/60)).padStart(2,'0')+'m');
+ const mode=s.defrost?'DEGELO':s.trip?'PROTEÇÃO':s.compressor?'REFRIGERAÇÃO':'STANDBY';
+ text('mode',mode);E('mode').className='pill '+(s.trip&&!s.defrost?'crit':mode==='STANDBY'?'amber':'ice');
+ text('speedtxt',s.speed+'×');[1,5,20].forEach(v=>E('sp'+v).classList.toggle('sel',s.speed==v));
+ text('room',F(s.room)+' °C');text('supply',F(s.discharge_air)+' °C');text('return',F(s.return_air)+' °C');text('evap',F(s.evaporator)+' °C');text('target','Setpoint '+F(s.target)+' °C');
+ E('roomtile').className='tile tt main'+(!s.defrost&&s.room>s.target+1.5?' warn':'');
+ st('comp',s.compressor?'on':'',s.compressor?'Em funcionamento':'Parado');text('capacity',s.compressor_pct+'%');
+ st('fans',s.fans?'on':'',s.fans?'Ligados':'Desligados');
+ text('valve',s.expansion_pct+'%');E('valvebar').style.width=s.expansion_pct+'%';
+ st('defrost',s.defrost?'bad':'',s.defrost?'ATIVO':'Inativo');
+ st('door',s.door?'bad':'on',s.door?'ABERTA':'Fechada');
+ st('trip',s.trip?'err':'on',s.trip?'DISPARADA':'Normal');
+ E('ms').innerHTML=[['gauge','Pressão de aspiração',F(s.suction_bar,2),'bar'],['gauge','Pressão de descarga',F(s.discharge_bar,2),'bar'],['heat','Superaquecimento*',F(s.superheat,2),'K'],['snow','Subarrefecimento*',F(s.subcooling,2),'K'],['bolt','Tensão trifásica',F(s.voltage),'V'],['plug','Corrente elétrica',F(s.current,2),'A'],['pulse','Potência instantânea',F(s.power_kw,2),'kW'],['bars','Energia acumulada',F(s.energy_kwh,2),'kWh'],['timer','Horas do compressor',F(s.compressor_hours),'h'],['fan','Horas dos ventiladores',F(s.fan_hours),'h']]
+  .map(m=>'<div class="m"><div class="h">'+I(m[0])+'<span>'+m[1]+'</span></div><div class="mv num">'+m[2]+'<small>'+m[3]+'</small></div></div>').join('');
+ stat('phase',s.phase_ok,'FALHA');stat('oil',s.oil_ok,'BAIXO');stat('gas',s.refrigerant_ok,'BAIXO');
+ text('doorbtn',s.door?'Fechar porta':'Abrir porta');
+ fault('phasebtn',s.phase_fault);fault('oilbtn',s.oil_fault);fault('gasbtn',s.low_refrigerant);fault('hpbtn',s.hp_fault);
+ const n=s.alarms.length;text('alarmnum',n);E('alarmbox').classList.toggle('has',n>0);E('alarmic').className='ibox '+(n?'crit':'ok');
+ E('alarms').innerHTML=n?s.alarms.map(x=>'<div><span class="dot crit"></span><span>'+esc(x)+'</span></div>').join(''):'Sem alarmes ativos';
+ E('events').innerHTML=s.events.slice(0,7).map(x=>'<li><span class="tm">T+'+Math.floor(x.t/60)+'m</span><span class="dot '+(x.level==='ALARM'?'crit':x.level==='WARN'?'warn':'ok')+'"></span><span>'+esc(x.message)+'</span></li>').join('')||'<li class="muted">Sem eventos.</li>';
+ if(!wasReady){E('setpoint').value=s.target;E('ambient').value=s.ambient;wasReady=true}
+ draw(s.history,s.target)}
+function draw(points,sp){
+ const cv=E('chart'),b=cv.getBoundingClientRect(),r=window.devicePixelRatio||1;if(!b.width)return;
+ cv.width=Math.round(b.width*r);cv.height=Math.round(b.height*r);
+ const c=cv.getContext('2d'),w=b.width,h=b.height,L=46,R=10,T=10,B=12;c.setTransform(r,0,0,r,0,0);
+ c.font='11px system-ui';c.fillStyle='#7d95ab';
+ if(!points||points.length<2){c.fillText('A recolher histórico…',L,h/2);return}
+ let vals=points.flatMap(p=>p.slice(1));if(sp!=null)vals.push(sp);
+ let lo=Math.floor(Math.min(...vals)-1),hi=Math.ceil(Math.max(...vals)+1);if(hi<=lo)hi=lo+1;
+ const x=i=>L+i*(w-L-R)/Math.max(1,points.length-1),y=v=>T+(hi-v)*(h-T-B)/(hi-lo);
+ c.lineWidth=1;
+ for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,yy=Math.round(y(v))+.5;c.strokeStyle='#1a3149';c.beginPath();c.moveTo(L,yy);c.lineTo(w-R,yy);c.stroke();c.fillText(F(v,(hi-lo)<8?1:0)+' °C',4,yy+4)}
+ if(sp!=null){c.save();c.setLineDash([5,4]);c.strokeStyle='#9db2c4';c.lineWidth=1.2;c.beginPath();c.moveTo(L,y(sp));c.lineTo(w-R,y(sp));c.stroke();c.restore()}
+ c.lineJoin='round';
+ [[3,'#ffb454',1.6],[2,'#7ee0a3',1.6],[1,'#4fd1ff',2.2]].forEach(s=>{c.strokeStyle=s[1];c.lineWidth=s[2];c.beginPath();points.forEach((p,i)=>i?c.lineTo(x(i),y(p[s[0]])):c.moveTo(x(i),y(p[s[0]])));c.stroke()})}
+async function update(){try{const r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)throw Error(r.status);paint(await r.json())}catch(e){text('conn','● SEM LIGAÇÃO');E('conn').className='pill crit';text('mqtt','MQTT —');E('mqtt').className='pill'}}
+addEventListener('resize',()=>{if(state)draw(state.history,state.target)});
+update();setInterval(update,2000);
+</script></body></html>

@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ColdRoom | Consola central</title>
+<style>
+:root{
+  --bg:#050d18; --bg2:#081423; --panel:#0c1c2e; --panel2:#102438; --line:#1a3149; --line2:#274764;
+  --ink:#eaf3fb; --ink2:#b4c7d8; --muted:#7d95ab;
+  --ice:#4fd1ff; --ice-dim:#1d5a78; --ice-bg:#0b2a3d;
+  --ok:#35d07f; --ok-bg:#0c2a20; --ok-line:#1d5a41;
+  --warn:#ffb020; --warn-bg:#2c2109; --warn-line:#6b4d12;
+  --crit:#ff5f57; --crit-bg:#2e1414; --crit-line:#7a2c29; --off:#6f8496;
+  --supply:#7ee0a3; --return:#ffb454; --sp:#9db2c4;
+  --r:12px; --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(1200px 600px at 70% -10%,#0d2540 0%,transparent 60%),var(--bg);background-attachment:fixed;
+  color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100%}
+button,select,input{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+.num{font-variant-numeric:tabular-nums}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}
+.ic.lg{width:26px;height:26px;stroke-width:1.6}
+.ic.sm{width:14px;height:14px}
+
+/* ---------- barra lateral ---------- */
+.sb{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#081728,#06101d);border-right:1px solid var(--line);z-index:30}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 18px 16px;border-bottom:1px solid var(--line)}
+.brand .logo{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--ice);background:var(--ice-bg);border:1px solid var(--ice-dim);box-shadow:0 0 18px rgba(79,209,255,.18)}
+.brand b{font-size:19px;letter-spacing:.01em}
+.brand b span{color:var(--ice)}
+.brand small{display:block;color:var(--muted);font-size:11px;margin-top:-2px}
+.nav{padding:12px 10px 6px;display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;color:var(--ink2);border:1px solid transparent}
+.nav a:hover{background:var(--panel);color:var(--ink)}
+.nav a.sel{background:var(--ice-bg);border-color:var(--ice-dim);color:var(--ice)}
+.nav a .cnt{margin-left:auto;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--panel2);color:var(--muted)}
+.nav a .cnt.on{background:var(--crit);color:#2a0705}
+.sb h4{margin:10px 20px 6px;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.sbsearch{margin:0 12px 8px;position:relative}
+.sbsearch .ic{position:absolute;left:9px;top:8px;color:var(--muted);width:15px;height:15px}
+.sbsearch input{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 8px 6px 30px;font-size:13px}
+.sbsearch input:focus{outline:none;border-color:var(--ice-dim)}
+.cams{flex:1;overflow:auto;padding:0 10px 10px;display:flex;flex-direction:column;gap:6px}
+.cam{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.cam:hover{border-color:var(--line2);background:var(--panel2)}
+.cam.sel{border-color:var(--ice);background:var(--ice-bg);box-shadow:0 0 0 1px rgba(79,209,255,.25),0 0 16px rgba(79,209,255,.12)}
+.cam .ci{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--bg2);color:var(--ice)}
+.cam b{display:block;font-size:13px}
+.cam small{display:block;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cam .tv{display:flex;align-items:center;gap:6px;font-weight:650;font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--off);display:inline-block}
+.dot.ok,.dot.info{background:var(--ok);box-shadow:0 0 6px rgba(53,208,127,.6)}
+.dot.warn,.dot.warning,.dot.alarm{background:var(--warn);box-shadow:0 0 6px rgba(255,176,32,.6)}
+.dot.crit,.dot.critical{background:var(--crit);box-shadow:0 0 6px rgba(255,95,87,.7)}
+.cam.st-off .tv,.cam.st-off .ci{color:var(--off)}
+.cam.st-crit .tv{color:var(--crit)}
+.sbfoot{border-top:1px solid var(--line);padding:10px 18px;color:var(--muted);font-size:12px;display:flex;align-items:center;gap:8px}
+
+/* ---------- topo ---------- */
+.mainc{min-width:0;display:flex;flex-direction:column}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:12px 22px;background:rgba(5,13,24,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.menu{display:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px;cursor:pointer}
+.htitle{min-width:0}
+.htitle h1{margin:0;font-size:18px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htitle h1 b{color:var(--ink);font-weight:700}
+.htitle .sub{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px;margin-top:2px}
+.spacer{flex:1}
+.hchip{display:flex;align-items:center;gap:10px;padding:7px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--panel);color:var(--ink2);font-size:12px;line-height:1.3}
+.hchip .ic{color:var(--ice)}
+.hchip b{display:block;color:var(--ink);font-weight:600}
+.mqtt{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;font-weight:700;letter-spacing:.04em;font-size:13px;border:1px solid var(--line2);white-space:nowrap;color:var(--muted);background:var(--panel)}
+.mqtt.ok{color:var(--ok);border-color:var(--ok);background:var(--ok-bg);box-shadow:0 0 16px rgba(53,208,127,.2)}
+.mqtt.warn{color:var(--warn);border-color:var(--warn);background:var(--warn-bg);box-shadow:0 0 16px rgba(255,176,32,.2)}
+.mqtt.cold{color:var(--ice);border-color:var(--ice-dim);background:var(--ice-bg)}
+.banner{background:var(--crit-bg);color:var(--crit);border-bottom:1px solid var(--crit-line);padding:7px 22px;font-size:13px;font-weight:600}
+main{padding:18px 22px 40px;width:100%;max-width:1700px}
+
+/* ---------- blocos ---------- */
+.tile,.panel,.kpi,.card{background:linear-gradient(180deg,var(--panel),#0a1727);border:1px solid var(--line);border-radius:var(--r)}
+.lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.ptitle{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;margin:0 0 10px}
+.ptitle .ic{color:var(--ice)}
+.ibox{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;flex:none;color:var(--ice);background:var(--ice-bg);border:1px solid var(--ice-dim)}
+.ibox.ok{color:var(--ok);background:var(--ok-bg);border-color:var(--ok-line)}
+.ibox.warn{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-line)}
+.ibox.crit{color:var(--crit);background:var(--crit-bg);border-color:var(--crit-line)}
+.ibox.off{color:var(--off);background:var(--bg2);border-color:var(--line)}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:9px;font-size:13px;font-weight:700;letter-spacing:.03em;border:1px solid var(--line2);background:var(--panel);white-space:nowrap}
+.pill.ice{color:var(--ice);border-color:var(--ice-dim);background:var(--ice-bg)}
+.pill.amber{color:var(--warn);border-color:var(--warn-line);background:var(--warn-bg)}
+.pill.ok{color:var(--ok);border-color:var(--ok-line);background:var(--ok-bg)}
+.pill.crit{color:var(--crit);border-color:var(--crit-line);background:var(--crit-bg)}
+.pill.off{color:var(--ink2)}
+
+/* ---------- visão central ---------- */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.kpi{padding:13px 14px;display:flex;gap:12px;align-items:center}
+.kpi .val{font-size:25px;font-weight:700;line-height:1.15}
+.kpi .val small{font-size:13px;color:var(--muted);font-weight:500}
+.kpi.alarm .val{color:var(--crit)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.filters select,.filters input[type=search]{background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:6px 10px;min-width:0}
+.filters input[type=search]{width:190px}
+.filters label{display:flex;gap:6px;align-items:center;color:var(--ink2);font-size:13px;cursor:pointer}
+.filters .count{color:var(--muted);font-size:12px;margin-left:auto}
+#groups{display:flex;flex-wrap:wrap;gap:18px 22px;align-items:flex-start}
+.group{flex:0 1 auto;max-width:100%}
+.group h3{margin:0 0 8px;font-size:13px;font-weight:650;display:flex;gap:8px;align-items:center}
+.group h3 .ic{color:var(--ice)}
+.group h3 .path{color:var(--muted);font-weight:500}
+.group .grid{display:flex;flex-wrap:wrap;gap:10px}
+.card{width:256px;padding:12px 14px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s}
+.card:hover,.card:focus-visible{border-color:var(--ice-dim);box-shadow:0 0 18px rgba(79,209,255,.1);outline:none}
+.card.st-crit{border-color:var(--crit-line);box-shadow:inset 0 0 0 1px var(--crit-line)}
+.card.st-warn{border-color:var(--warn-line)}
+.card.st-off{opacity:.75}
+.card .top{display:flex;gap:10px;align-items:center}
+.card .top .ibox{width:36px;height:36px;border-radius:9px}
+.card .id{font-weight:700;font-size:15px}
+.card .place{color:var(--muted);font-size:12px}
+.card .badge{margin-left:auto;align-self:flex-start}
+.card .temp{font-size:31px;font-weight:700;line-height:1.1;margin:10px 0 0}
+.card .temp small{font-size:15px;color:var(--muted);font-weight:500}
+.card .sp{color:var(--muted);font-size:12px}
+.card.st-crit .temp{color:var(--crit)}.card.st-warn .temp{color:var(--warn)}.card.st-off .temp{color:var(--off)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 7px;border-radius:6px;background:var(--bg2);border:1px solid var(--line2);color:var(--ink2)}
+.chip.on{color:var(--ice);border-color:var(--ice-dim)}
+.chip.warn{color:var(--warn);border-color:var(--warn-line)}
+.card svg.spark{display:block;width:100%;height:34px;margin-top:8px}
+.card .foot{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:6px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.badge.crit{background:var(--crit);color:#2a0705}
+.badge.warn{background:var(--warn);color:#2a1a02}
+.badge.off{background:var(--off);color:#06101c}
+.badge.ok{color:var(--ok);border:1px solid var(--ok-line);background:var(--ok-bg)}
+.empty{color:var(--muted);padding:40px;text-align:center;border:1px dashed var(--line2);border-radius:var(--r);width:100%}
+.side{display:flex;flex-direction:column;gap:12px;position:sticky;top:78px}
+.panel{padding:13px 15px}
+.alist,.elist{list-style:none;margin:0;padding:0}
+.side .alist,.side .elist{max-height:36vh;overflow:auto}
+.alist li{display:flex;gap:9px;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}
+.alist li:first-child,.elist li:first-child{border-top:0}
+.alist li .dot,.elist li .dot{margin-top:6px}
+.alist li:hover .t{color:var(--ice)}
+.alist .t{font-weight:600}
+.alist .s,.elist .s{color:var(--muted);font-size:12px}
+.elist li{display:flex;gap:9px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+.elist .time{color:var(--muted);font-size:12px;font-family:var(--mono);flex:none}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:start}
+
+/* ---------- detalhe ---------- */
+.hero{display:flex;flex-wrap:wrap;gap:16px 20px;align-items:center;margin-bottom:14px}
+.hero-art{width:150px;height:104px;border-radius:12px;border:1px solid var(--line2);flex:none;box-shadow:0 0 24px rgba(79,209,255,.1)}
+.hero h2{margin:0;font-size:27px;line-height:1.15}
+.hero .tag{color:var(--ink2);font-size:13px;margin-top:2px}
+.hero .ln{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;margin-top:5px;color:var(--ink)}
+.hero .ln .ic{color:var(--ice);width:15px;height:15px}
+.hero .ln i{font-style:normal;color:var(--muted);font-size:11px;letter-spacing:.06em;font-weight:600}
+.hero .ln .sep{color:var(--muted)}
+.hero .ln code{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
+.hero .chipsr{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row{display:grid;gap:12px;margin-bottom:12px}
+.r-status{grid-template-columns:minmax(0,1.25fr) repeat(3,minmax(0,1fr))}
+.r-temps{grid-template-columns:repeat(4,minmax(0,1fr))}
+.r-mid{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+.r-2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.tile{padding:13px 15px}
+.stat{display:flex;gap:13px;align-items:center}
+.stat .t{font-weight:650}
+.stat .v{display:flex;align-items:center;gap:6px;font-weight:700;margin-top:2px}
+.v.ok{color:var(--ok)}.v.bad{color:var(--warn)}.v.na{color:var(--muted)}
+.alarmt .n{font-size:32px;font-weight:700;line-height:1;color:var(--ok)}
+.alarmt.has .n{color:var(--crit)}
+.alarmt .lst{border-left:1px solid var(--line2);padding-left:13px;margin-left:2px;font-size:13px;color:var(--ink2);min-width:0}
+.alarmt .lst div{display:flex;gap:7px;align-items:baseline}
+.temp-t{display:flex;gap:13px;align-items:flex-start}
+.temp-t .big{font-size:32px;font-weight:700;line-height:1.15;margin:3px 0 2px}
+.temp-t .sub{color:var(--ink2);font-size:12.5px}
+.temp-t.main{border-color:var(--ice);background:linear-gradient(180deg,#0d3044,#0b2233);box-shadow:0 0 0 1px rgba(79,209,255,.2),0 0 26px rgba(79,209,255,.14)}
+.temp-t.main .big{color:var(--ok)}
+.temp-t.main.warn .big{color:var(--warn)}.temp-t.main.crit .big{color:var(--crit)}
+.temp-t.main.crit{border-color:var(--crit);box-shadow:0 0 26px rgba(255,95,87,.15)}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.chead .ptitle{margin:0}
+.chartwrap{position:relative;height:250px}
+.chartwrap canvas{width:100%;height:100%;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:13px;font-size:12px;color:var(--ink2)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.legend i.dash{background:repeating-linear-gradient(90deg,var(--sp) 0 4px,transparent 4px 7px)}
+.ranges{display:flex;gap:4px}
+.ranges button{background:var(--bg2);border:1px solid var(--line2);border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer;color:var(--ink2)}
+.ranges button.sel{color:var(--ice);border-color:var(--ice-dim);background:var(--ice-bg)}
+.readout{font-family:var(--mono);font-size:12px;color:var(--ink2);min-height:18px;margin-top:6px}
+.kv{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8.5px 0;border-top:1px solid var(--line)}
+.kv .ic{color:var(--ice)}
+.kv .k{color:var(--ink2)}
+.kv .s{display:flex;align-items:center;gap:7px;font-weight:650}
+.kv .x{min-width:44px;text-align:right;font-weight:650}
+.s.on{color:var(--ok)}.s.idle{color:var(--ink2)}.s.bad{color:var(--warn)}
+.bar{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden;width:70px}
+.bar span{display:block;height:100%;background:var(--ice)}
+.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.metric{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.metric .h{display:flex;gap:8px;align-items:center;color:var(--ink2);font-size:12px;line-height:1.25;min-height:30px}
+.metric .h .ic{color:var(--ice)}
+.metric .v{font-size:20px;font-weight:700;margin-top:4px;white-space:nowrap}
+.metric .v small{font-size:13px;color:var(--ink2);font-weight:600;margin-left:3px}
+.foot-note{color:var(--muted);font-size:11px;margin-top:8px}
+.ckv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.ckv .k{color:var(--ink2)}
+details.raw summary{cursor:pointer;color:var(--ink2);margin-top:8px}
+details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:340px}
+
+@media (min-width:1800px){.metrics{grid-template-columns:repeat(10,minmax(0,1fr))}}
+@media (max-width:1280px){
+  .layout{grid-template-columns:1fr}.side{position:static}
+  .r-status,.r-temps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .r-mid,.r-2,.two{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .hchip{display:none}
+}
+@media (max-width:860px){
+  body{display:block}
+  .sb{position:fixed;left:0;top:0;width:280px;transform:translateX(-100%);transition:transform .2s}
+  .sb.open{transform:none;box-shadow:0 0 60px #000}
+  .menu{display:block}
+  header{padding:10px 12px}main{padding:12px}
+  .htitle h1{font-size:15px}.htitle .sub{display:none}
+  .kpis,.r-status,.r-temps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .group{flex:1 1 100%}.card{width:100%}
+  .hero .chipsr{margin-left:0}
+  .mqtt{padding:6px 9px;font-size:11px}
+}
+@media (max-width:480px){.r-status,.r-temps{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<svg id="sprite" width="0" height="0" style="position:absolute"></svg>
+
+<aside class="sb" id="sb">
+  <a class="brand" href="#">
+    <span class="logo"><svg class="ic lg"><use href="#i-snow"/></svg></span>
+    <span><b>Cold<span>Room</span></b><small id="consoleName">Consola central</small></span>
+  </a>
+  <nav class="nav">
+    <a href="#" id="navHome"><svg class="ic"><use href="#i-home"/></svg>Visão central</a>
+    <a href="#/alarmes" id="navAlarms"><svg class="ic"><use href="#i-bell"/></svg>Alarmes e eventos<span class="cnt" id="navAlarmCnt">0</span></a>
+  </nav>
+  <h4><span>Câmaras frigoríficas</span><span class="num" id="camCnt"></span></h4>
+  <div class="sbsearch"><svg class="ic"><use href="#i-search"/></svg><input type="search" id="sbText" placeholder="Procurar…" aria-label="Procurar câmara"></div>
+  <div class="cams" id="camList"></div>
+  <div class="sbfoot"><svg class="ic sm"><use href="#i-clock"/></svg><span class="num" id="clock"></span></div>
+</aside>
+
+<div class="mainc">
+<header>
+  <button class="menu" id="menuBtn" aria-label="Menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+  <div class="htitle">
+    <h1>Sistema central de monitorização de <b>câmaras frigoríficas</b></h1>
+    <div class="sub"><svg class="ic sm"><use href="#i-store"/></svg><span id="fleet">—</span></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="hchip"><svg class="ic lg"><use href="#i-radio"/></svg><span><span id="brokerL1">Dados recebidos via</span><b id="brokerL2">broker Mosquitto</b></span></div>
+  <span class="mqtt" id="mqttPill">MQTT…</span>
+</header>
+<div class="banner hidden" id="linkBanner">● Ligação à consola perdida — a tentar novamente…</div>
+
+<main>
+  <!-- ============ VISÃO CENTRAL ============ -->
+  <section id="overview">
+    <div class="kpis">
+      <div class="kpi"><span class="ibox"><svg class="ic lg"><use href="#i-snow"/></svg></span><div><div class="lbl">Câmaras online</div><div class="val num" id="kOnline">–</div></div></div>
+      <div class="kpi" id="kAlarmBox"><span class="ibox ok" id="kAlarmIc"><svg class="ic lg"><use href="#i-bell"/></svg></span><div><div class="lbl">Alarmes ativos</div><div class="val num" id="kAlarms">–</div></div></div>
+      <div class="kpi"><span class="ibox"><svg class="ic lg"><use href="#i-drop"/></svg></span><div><div class="lbl">Em degelo</div><div class="val num" id="kDefrost">–</div></div></div>
+      <div class="kpi"><span class="ibox"><svg class="ic lg"><use href="#i-door"/></svg></span><div><div class="lbl">Portas abertas</div><div class="val num" id="kDoors">–</div></div></div>
+      <div class="kpi"><span class="ibox"><svg class="ic lg"><use href="#i-bolt"/></svg></span><div><div class="lbl">Potência total</div><div class="val num" id="kPower">–</div></div></div>
+    </div>
+    <div class="layout">
+      <div>
+        <div class="filters">
+          <select id="fCountry" aria-label="País"></select>
+          <select id="fZone" aria-label="Zona"></select>
+          <select id="fStore" aria-label="Loja"></select>
+          <select id="fPlace" aria-label="Local"></select>
+          <input type="search" id="fText" placeholder="Procurar câmara…" aria-label="Procurar">
+          <label><input type="checkbox" id="fAlarm"> Só com alarmes</label>
+          <span class="count" id="fCount"></span>
+        </div>
+        <div id="groups"></div>
+      </div>
+      <aside class="side">
+        <div class="panel"><h3 class="ptitle"><svg class="ic"><use href="#i-bell"/></svg>Alarmes ativos<span class="badge ok" id="sideAlarmCount" style="margin-left:auto">0</span></h3><ul class="alist" id="alarmList"></ul></div>
+        <div class="panel"><h3 class="ptitle"><svg class="ic"><use href="#i-list"/></svg>Últimos eventos</h3><ul class="elist" id="eventList"></ul></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ ALARMES ============ -->
+  <section id="alarms" class="hidden">
+    <div class="two">
+      <div class="panel"><h3 class="ptitle"><svg class="ic"><use href="#i-bell"/></svg>Alarmes ativos<span class="badge ok" id="aCount" style="margin-left:auto">0</span></h3><ul class="alist" id="aList"></ul></div>
+      <div class="panel"><h3 class="ptitle"><svg class="ic"><use href="#i-list"/></svg>Registo de eventos</h3><ul class="elist" id="aEvents"></ul></div>
+    </div>
+  </section>
+
+  <!-- ============ DETALHE ============ -->
+  <section id="detail" class="hidden">
+    <div class="hero">
+      <svg class="hero-art" viewBox="0 0 150 104" aria-hidden="true">
+        <defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17395a"/><stop offset="1" stop-color="#0a1828"/></linearGradient></defs>
+        <rect width="150" height="104" fill="url(#hg)"/>
+        <rect x="30" y="10" width="34" height="11" rx="2" fill="#0e2236" stroke="#3b6a8f"/>
+        <path d="M36 15.5h22" stroke="#4fd1ff" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 3"/>
+        <rect x="20" y="21" width="110" height="66" rx="4" fill="#0e2236" stroke="#3b6a8f" stroke-width="1.5"/>
+        <path d="M46 21v66M104 21v66" stroke="#24486a"/>
+        <rect x="56" y="33" width="38" height="54" rx="2" fill="#123350" stroke="#4fd1ff" stroke-width="1.5"/>
+        <path d="M88 56v11" stroke="#4fd1ff" stroke-width="2.6" stroke-linecap="round"/>
+        <svg x="64" y="40" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4fd1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-snow"/></svg>
+        <path d="M10 91h130" stroke="#24486a" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div style="min-width:0">
+        <h2 id="dName">—</h2>
+        <div class="tag">Simulação dinâmica de uma única câmara · Pico W</div>
+        <div class="ln" id="dCrumbs"></div>
+        <div class="ln"><svg class="ic"><use href="#i-topic"/></svg><span class="muted">Tópico MQTT:</span><code id="dTopic"></code></div>
+      </div>
+      <div class="chipsr">
+        <span class="pill ice num" id="dTplusP"><svg class="ic"><use href="#i-clock"/></svg><span id="dTplus"></span></span>
+        <span class="pill amber" id="dMode">—</span>
+        <span class="pill off num" id="dSpeedP"><svg class="ic"><use href="#i-layers"/></svg><span id="dSpeed"></span></span>
+        <span class="pill" id="dComm"></span>
+      </div>
+    </div>
+
+    <div class="row r-status">
+      <div class="tile stat alarmt" id="dAlarmBox">
+        <span class="ibox ok" id="dAlarmIc"><svg class="ic lg"><use href="#i-bell"/></svg></span>
+        <div><div class="t">Alarmes ativos</div><div class="n num" id="dAlarmCount">0</div></div>
+        <div class="lst" id="dAlarmList"></div>
+      </div>
+      <div class="tile stat"><span class="ibox" id="dPhaseIc"><svg class="ic lg"><use href="#i-pulse"/></svg></span><div><div class="t">Monitor de fases</div><div id="dPhase"></div></div></div>
+      <div class="tile stat"><span class="ibox" id="dOilIc"><svg class="ic lg"><use href="#i-drop"/></svg></span><div><div class="t">Óleo do compressor</div><div id="dOil"></div></div></div>
+      <div class="tile stat"><span class="ibox" id="dRefrIc"><svg class="ic lg"><use href="#i-tank"/></svg></span><div><div class="t">Refrigerante</div><div id="dRefr"></div></div></div>
+    </div>
+
+    <div class="row r-temps">
+      <div class="tile temp-t main" id="dRoomTile"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-thermo"/></svg><div><div class="lbl" style="color:var(--ink)">Temperatura da câmara</div><div class="big num" id="dRoom">–</div><div class="sub num" id="dSp">Setpoint –</div></div></div>
+      <div class="tile temp-t"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-wind"/></svg><div><div class="lbl">Ar insuflado</div><div class="big num" id="dSupply">–</div><div class="sub">Saída do evaporador</div></div></div>
+      <div class="tile temp-t"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-ret"/></svg><div><div class="lbl">Ar de retorno</div><div class="big num" id="dReturn">–</div><div class="sub">Entrada no evaporador</div></div></div>
+      <div class="tile temp-t"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-snow"/></svg><div><div class="lbl">Evaporador / degelo</div><div class="big num" id="dEvap">–</div><div class="sub">Temperatura simulada da serpentina</div></div></div>
+    </div>
+
+    <div class="row r-mid">
+      <div class="tile">
+        <div class="chead">
+          <h3 class="ptitle"><svg class="ic"><use href="#i-trend"/></svg>Tendência térmica</h3>
+          <div class="legend">
+            <span><i style="background:var(--ice)"></i>Câmara</span>
+            <span><i style="background:var(--supply)"></i>Insuflação</span>
+            <span><i style="background:var(--return)"></i>Retorno</span>
+            <span><i class="dash"></i>Setpoint</span>
+          </div>
+          <div class="ranges" id="ranges"><button data-r="900">15 min</button><button data-r="3600" class="sel">1 h</button><button data-r="0">Tudo</button></div>
+        </div>
+        <div class="chartwrap"><canvas id="chart"></canvas></div>
+        <div class="readout num" id="readout"></div>
+      </div>
+      <div class="tile">
+        <h3 class="ptitle" style="margin-bottom:4px"><svg class="ic"><use href="#i-gear"/></svg>Componentes e ciclo de refrigeração</h3>
+        <div class="kv"><svg class="ic"><use href="#i-comp"/></svg><span class="k">Compressor</span><span id="dComp"></span><span class="x num" id="dCompLoad"></span></div>
+        <div class="kv"><svg class="ic"><use href="#i-fan"/></svg><span class="k">Ventiladores</span><span id="dFans"></span><span class="x"></span></div>
+        <div class="kv"><svg class="ic"><use href="#i-valve"/></svg><span class="k">Válvula eletrónica EEV</span><span class="s idle"><span class="bar"><span id="dEevBar" style="width:0"></span></span>Abertura</span><span class="x num" id="dEev"></span></div>
+        <div class="kv"><svg class="ic"><use href="#i-snow"/></svg><span class="k">Ciclo de degelo</span><span id="dDefrost"></span><span class="x"></span></div>
+        <div class="kv"><svg class="ic"><use href="#i-door"/></svg><span class="k">Porta da câmara</span><span id="dDoor"></span><span class="x"></span></div>
+        <div class="kv"><svg class="ic"><use href="#i-shield"/></svg><span class="k">Proteção do compressor</span><span id="dProt"></span><span class="x"></span></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="tile">
+        <h3 class="ptitle"><svg class="ic"><use href="#i-bars"/></svg>Pressões, eficiência e energia</h3>
+        <div class="metrics" id="dMetrics"></div>
+        <div class="foot-note">* Valores calculados pelo equipamento.</div>
+      </div>
+    </div>
+
+    <div class="row r-2">
+      <div class="tile"><h3 class="ptitle"><svg class="ic"><use href="#i-list"/></svg>Eventos desta câmara</h3><ul class="elist" id="dEvents"></ul></div>
+      <div class="tile">
+        <h3 class="ptitle" style="margin-bottom:2px"><svg class="ic"><use href="#i-radio"/></svg>Comunicação</h3>
+        <div class="ckv" style="border-top:0"><span class="k">Última mensagem</span><span class="num" id="dLast"></span></div>
+        <div class="ckv"><span class="k">Mensagens recebidas</span><span class="num" id="dCount"></span></div>
+        <div class="ckv"><span class="k">Primeira vez visto</span><span class="num" id="dFirst"></span></div>
+        <details class="raw"><summary>Payload JSON recebido</summary><pre id="dRaw"></pre></details>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+
+<script>
+"use strict";
+/* ================= ícones (desenhados em linha, sem dependências) ================= */
+const ICONS = {
+  snow:"M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1M9.5 3.5L12 6l2.5-2.5M9.5 20.5L12 18l2.5 2.5M3.5 9.5L6 12l-2.5 2.5M20.5 9.5L18 12l2.5 2.5",
+  home:"M3 11l9-8 9 8M5 9.5V20h14V9.5M10 20v-6h4v6",
+  bell:"M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 004 0",
+  pulse:"M3 12h4l3-8 4 16 3-8h4",
+  drop:"M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.500 6-11 6-11z",
+  tank:"M7 7h10a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2zM9 7V4h6v3M5 12h14M5 16h14",
+  thermo:"M14 14.8V5a2 2 0 00-4 0v9.800a4 4 0 104 0zM12 9v8",
+  wind:"M3 8h10a3 3 0 10-3-3M3 12h15a3 3 0 11-3 3M3 16h7a2.500 2.500 0 11-2.500 2.500",
+  ret:"M9 7l-5 5 5 5M4 12h16M13 6h7M13 18h7",
+  fan:"M12 10.500a1.500 1.500 0 100 3 1.500 1.500 0 000-3zM12 10.500C11 6 12.500 3 15.500 3s3 4.500-1 7M13.500 12c4.500-1 7.500.500 7.500 3.500s-4.500 3-7-1M12 13.500c1 4.500-.500 7.500-3.500 7.500s-3-4.500 1-7M10.500 12C6 13 3 11.500 3 8.500s4.500-3 7 1",
+  valve:"M4 14h16v5H4zM12 14V8M8 8h8M12 8V5M9.500 5h5",
+  door:"M6 3h12v18H6zM14.500 11v2M3 21h18",
+  shield:"M12 3l8 3v6c0 5-3.500 8-8 9-4.500-1-8-4-8-9V6l8-3zM9 12l2 2 4-4",
+  gauge:"M4 18a8 8 0 1116 0M12 18l4-6M12 6v1.500M6 12H4.500M19.500 12H18",
+  bolt:"M13 2L4 14h7l-1 8 9-12h-7l1-8z",
+  clock:"M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5l3 2",
+  layers:"M12 3l9 4.500-9 4.500-9-4.500L12 3zM3 12l9 4.500 9-4.500M3 16.500L12 21l9-4.500",
+  pin:"M12 21s7-6.200 7-11a7 7 0 10-14 0c0 4.800 7 11 7 11zM12 7.500a2.500 2.500 0 100 5 2.500 2.500 0 000-5z",
+  topic:"M4 5h16v6H4zM4 13h16v6H4zM7.500 8h.010M7.500 16h.010M11 8h6M11 16h6",
+  trend:"M3 17l6-6 4 4 8-8M15 7h6v6",
+  bars:"M5 20V11M12 20V4M19 20v-7",
+  list:"M8 6h13M8 12h13M8 18h13M3.500 6h.010M3.500 12h.010M3.500 18h.010",
+  radio:"M12 10a2 2 0 100 4 2 2 0 000-4zM7.800 7.800a6 6 0 000 8.400M16.200 7.800a6 6 0 010 8.400M5 5a10 10 0 000 14M19 5a10 10 0 010 14",
+  comp:"M5 9h14v10H5zM8 9V5.500h8V9M9 14h6M3 13h2M19 13h2",
+  heat:"M8 3c-2 3 2 4 0 7M12 3c-2 3 2 4 0 7M16 3c-2 3 2 4 0 7M4 15h16M4 19h16",
+  check:"M12 3a9 9 0 100 18 9 9 0 000-18zM8 12.500l2.500 2.500L16 9.500",
+  warn:"M12 3l10 18H2L12 3zM12 10v5M12 18h.010",
+  store:"M4 9l1.500-5h13L20 9M4 9v11h16V9M4 9h16M9.500 20v-6h5v6",
+  search:"M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4",
+  menu:"M4 6h16M4 12h16M4 18h16",
+  gear:"M12 9a3 3 0 100 6 3 3 0 000-6zM12 2v3M12 19v3M2 12h3M19 12h3M4.900 4.900l2.100 2.100M17 17l2.100 2.100M19.100 4.900L17 7M7 17l-2.100 2.100",
+  plug:"M9 3v5M15 3v5M6 8h12v3a6 6 0 01-12 0V8zM12 17v4",
+  timer:"M12 7a7 7 0 100 14 7 7 0 000-14zM12 11v3.500M9.500 3h5M12 3v4",
+};
+document.getElementById("sprite").innerHTML = Object.entries(ICONS).map(([n,d]) => `<symbol id="i-${n}" viewBox="0 0 24 24"><path d="${d}"/></symbol>`).join("");
+const I = (n, cls="") => `<svg class="ic ${cls}"><use href="#i-${n}"/></svg>`;
+
+/* ================= estado ================= */
+const S = {
+  devices: new Map(), events: [], broker: {state:"disabled"}, console: {name:"Consola central", stale_after:60},
+  skew: 0, linkOk: false, view: "overview", detailKey: null, detail: null, range: 3600, hover: null, sbText: "",
+};
+const $ = id => document.getElementById(id);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const now = () => Date.now()/1000 + S.skew;
+const f = (v, d=1) => (v === null || v === undefined || isNaN(v)) ? "–" : Number(v).toFixed(d);
+const store = {
+  get(k, d){ try { const v = localStorage.getItem("coldroom."+k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem("coldroom."+k, JSON.stringify(v)); } catch(e){} },
+};
+function ago(ts){
+  if (!ts) return "nunca";
+  const s = Math.max(0, Math.round(now() - ts));
+  if (s < 60) return `há ${s} s`;
+  if (s < 3600) return `há ${Math.floor(s/60)} min`;
+  if (s < 86400) return `há ${Math.floor(s/3600)} h ${Math.floor(s%3600/60)} min`;
+  return `há ${Math.floor(s/86400)} d`;
+}
+const hhmm = ts => new Date(ts*1000).toLocaleTimeString("pt-PT", {hour:"2-digit", minute:"2-digit", second:"2-digit"});
+const dt = ts => ts ? new Date(ts*1000).toLocaleString("pt-PT") : "–";
+function tplus(s){ if (s == null) return ""; s = Math.floor(s); return `T+${Math.floor(s/3600)}h ${String(Math.floor(s%3600/60)).padStart(2,"0")}m`; }
+const href = key => "#/camara/" + encodeURIComponent(key);
+
+function sev(d){
+  if (d.comm !== "online") return "off";
+  if ((d.alarms||[]).some(a => a.severity === "critical" || a.severity === "alarm")) return "crit";
+  if ((d.alarms||[]).length) return "warn";
+  const x = d.data || {};
+  if (x.t_room != null && x.t_setpoint != null && !x.defrost && x.t_room > x.t_setpoint + 1.5) return "warn";
+  return "ok";
+}
+function isNormal(v){ return v == null || /^(normal|ok|true)$/i.test(String(v)); }
+const RANK = {crit:0, warn:1, off:2, ok:3};
+
+/* ================= ligação ================= */
+async function loadState(){
+  const r = await fetch("api/state", {cache:"no-store"});
+  const j = await r.json();
+  S.skew = j.console.now - Date.now()/1000;
+  S.console = j.console; S.broker = j.broker; S.events = j.events;
+  S.devices = new Map(j.devices.map(d => [d.key, d]));
+  $("consoleName").textContent = j.console.name;
+  buildFilters(); schedule();
+}
+let es;
+function connect(){
+  es = new EventSource("events");
+  es.onopen = () => { S.linkOk = true; $("linkBanner").classList.add("hidden"); loadState().catch(()=>{}); if (S.detailKey) loadDetail(S.detailKey); };
+  es.onerror = () => { S.linkOk = false; $("linkBanner").classList.remove("hidden"); renderBroker(); };
+  es.addEventListener("device", e => {
+    const d = JSON.parse(e.data);
+    const old = S.devices.get(d.key);
+    d.spark = old ? (old.spark || []) : [];
+    if (d.point){ d.spark.push([d.point[0], d.point[1]]); if (d.spark.length > 90) d.spark.shift(); }
+    S.devices.set(d.key, d);
+    if (S.detail && S.detail.key === d.key){ Object.assign(S.detail, d); if (d.point) S.detail.history.push(d.point); }
+    if (!old) buildFilters();
+    schedule();
+  });
+  es.addEventListener("broker", e => { S.broker = JSON.parse(e.data); renderBroker(); });
+  es.addEventListener("event", e => {
+    const ev = JSON.parse(e.data);
+    S.events.unshift(ev); if (S.events.length > 100) S.events.pop();
+    if (S.detail && ev.device === S.detail.key) S.detail.events.unshift(ev);
+    schedule();
+  });
+  es.addEventListener("tick", e => { S.skew = JSON.parse(e.data).now - Date.now()/1000; });
+}
+
+/* ================= filtros ================= */
+const F = store.get("filters", {country:"", zone:"", store:"", place:"", text:"", alarm:false});
+function opts(sel, label, values, cur){
+  const list = [...values].sort((a,b) => a[1].localeCompare(b[1], "pt"));
+  sel.innerHTML = `<option value="">${label}: todos</option>` + list.map(([v,t]) => `<option value="${esc(v)}"${v===cur?" selected":""}>${esc(t)}</option>`).join("");
+}
+function buildFilters(){
+  const all = [...S.devices.values()];
+  const lvl = (k, pre) => new Map(all.filter(pre).map(d => [d.slug[k], d.loc[k]]));
+  opts($("fCountry"), "País", lvl("country", () => true), F.country);
+  opts($("fZone"), "Zona", lvl("zone", d => !F.country || d.slug.country === F.country), F.zone);
+  opts($("fStore"), "Loja", lvl("store", d => (!F.country || d.slug.country === F.country) && (!F.zone || d.slug.zone === F.zone)), F.store);
+  opts($("fPlace"), "Local", lvl("place", d => (!F.country || d.slug.country === F.country) && (!F.zone || d.slug.zone === F.zone) && (!F.store || d.slug.store === F.store)), F.place);
+  $("fText").value = F.text; $("fAlarm").checked = F.alarm;
+}
+function onFilter(k, reset){
+  return e => {
+    F[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    (reset||[]).forEach(r => F[r] = "");
+    store.set("filters", F); if (k !== "text") buildFilters(); schedule();
+  };
+}
+$("fCountry").onchange = onFilter("country", ["zone","store","place"]);
+$("fZone").onchange = onFilter("zone", ["store","place"]);
+$("fStore").onchange = onFilter("store", ["place"]);
+$("fPlace").onchange = onFilter("place");
+$("fText").oninput = onFilter("text");
+$("fAlarm").onchange = onFilter("alarm");
+$("sbText").oninput = e => { S.sbText = e.target.value.toLowerCase(); schedule(); };
+const hay = d => [d.name, d.device_label, d.loc.store, d.loc.place, d.loc.zone, d.topic].join(" ").toLowerCase();
+function visible(d){
+  if (F.country && d.slug.country !== F.country) return false;
+  if (F.zone && d.slug.zone !== F.zone) return false;
+  if (F.store && d.slug.store !== F.store) return false;
+  if (F.place && d.slug.place !== F.place) return false;
+  if (F.alarm && !(d.alarms||[]).length) return false;
+  if (F.text && !hay(d).includes(F.text.toLowerCase())) return false;
+  return true;
+}
+
+/* ================= render ================= */
+let pending = false;
+function schedule(){ if (!pending){ pending = true; requestAnimationFrame(() => { pending = false; render(); }); } }
+
+function spark(points, sp){
+  if (!points || points.length < 2) return `<svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none"></svg>`;
+  const vals = points.map(p => p[1]).filter(v => v != null);
+  let lo = Math.min(...vals, sp ?? Infinity), hi = Math.max(...vals, sp ?? -Infinity);
+  if (hi - lo < 1){ const m = (hi+lo)/2; lo = m - .5; hi = m + .5; }
+  const t0 = points[0][0], t1 = points[points.length-1][0] || t0 + 1;
+  const x = t => ((t - t0) / Math.max(1, t1 - t0)) * 100, y = v => 31 - ((v - lo) / (hi - lo)) * 28;
+  const line = points.filter(p => p[1] != null).map(p => `${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(" ");
+  const spl = sp != null ? `<line x1="0" x2="100" y1="${y(sp).toFixed(1)}" y2="${y(sp).toFixed(1)}" stroke="#9db2c4" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" opacity=".6"/>` : "";
+  return `<svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none">${spl}<polyline points="${line}" fill="none" stroke="#4fd1ff" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+function card(d){
+  const x = d.data || {}, s = sev(d), n = (d.alarms||[]).length;
+  let badge;
+  if (d.comm === "stale" || d.comm === "offline") badge = `<span class="badge off">SEM COMUNICAÇÃO</span>`;
+  else if (d.comm === "waiting") badge = `<span class="badge off">A AGUARDAR</span>`;
+  else if (n) badge = `<span class="badge ${s === "crit" ? "crit" : "warn"}">${I("warn","sm")}${n} alarme${n>1?"s":""}</span>`;
+  else badge = `<span class="badge ok">OK</span>`;
+  const chips = [];
+  if (x.mode) chips.push(`<span class="chip">${esc(x.mode)}</span>`);
+  if (x.comp_on != null) chips.push(`<span class="chip ${x.comp_on?"on":""}">${I("comp","sm")}${x.comp_on ? (x.comp_load!=null? f(x.comp_load,0)+"%" : "ligado") : "parado"}</span>`);
+  if (x.defrost) chips.push(`<span class="chip on">${I("drop","sm")}Degelo</span>`);
+  if (x.door_open) chips.push(`<span class="chip warn">${I("door","sm")}Porta aberta</span>`);
+  ["phase_monitor","comp_oil","refrigerant"].forEach((k,i) => { if (!isNormal(x[k])) chips.push(`<span class="chip warn">${["Fases","Óleo","Refrig."][i]}: ${esc(x[k])}</span>`); });
+  return `<button class="card st-${s}" data-key="${esc(d.key)}">
+    <div class="top"><span class="ibox ${s === "ok" ? "" : s}">${I("snow")}</span><div><div class="id">${esc(d.device_label)}</div><div class="place">${esc(d.loc.place)}</div></div>${badge}</div>
+    <div class="temp num">${f(x.t_room)}<small> °C</small></div>
+    <div class="sp num">Setpoint ${f(x.t_setpoint)} °C</div>
+    <div class="chips">${chips.join("")}</div>
+    ${spark(d.spark, x.t_setpoint)}
+    <div class="foot"><span>${esc(d.name)}</span><span class="num">${ago(d.last_seen)}</span></div>
+  </button>`;
+}
+function evRow(e){
+  return `<li><span class="time">${hhmm(e.ts)}</span><span class="dot ${e.cleared ? "ok" : esc(e.severity)}"></span>
+    <div><div>${esc(e.text)}</div><div class="s">${esc(e.label)}</div></div></li>`;
+}
+function alarmRows(alarms){
+  return alarms.length ? alarms.map(a => `<li data-key="${esc(a.d.key)}"><span class="dot ${a.severity === "critical" ? "crit" : "warn"}"></span>
+      <div><div class="t">${esc(a.d.device_label)} · ${esc(a.d.loc.store)}</div><div class="s">${esc(a.text)} · ${esc(a.d.loc.place)}</div></div></li>`).join("")
+    : `<li style="cursor:default"><span class="dot ok"></span><div class="s">Sem alarmes ativos</div></li>`;
+}
+
+function render(){
+  renderBroker();
+  const all = [...S.devices.values()];
+  const alarms = all.flatMap(d => (d.alarms||[]).map(a => ({...a, d})));
+  alarms.sort((a,b) => (a.severity === "critical" ? 0 : 1) - (b.severity === "critical" ? 0 : 1));
+
+  // topo + barra lateral
+  const stores = new Set(all.map(d => `${d.slug.country}/${d.slug.zone}/${d.slug.store}`)).size;
+  $("fleet").textContent = all.length ? `${all.length} câmara${all.length>1?"s":""} em ${stores} loja${stores>1?"s":""}` : "À espera de dados…";
+  const nc = $("navAlarmCnt"); nc.textContent = alarms.length; nc.classList.toggle("on", alarms.length > 0);
+  $("navHome").classList.toggle("sel", S.view === "overview");
+  $("navAlarms").classList.toggle("sel", S.view === "alarms");
+  $("camCnt").textContent = all.length || "";
+  const list = all.filter(d => !S.sbText || hay(d).includes(S.sbText))
+    .sort((a,b) => (RANK[sev(a)] - RANK[sev(b)]) || a.loc.store.localeCompare(b.loc.store, "pt") || a.loc.place.localeCompare(b.loc.place, "pt") || a.device_label.localeCompare(b.device_label));
+  $("camList").innerHTML = list.map(d => { const s = sev(d);
+    return `<a class="cam st-${s}${d.key === S.detailKey ? " sel" : ""}" href="${href(d.key)}"><span class="ci">${I("snow")}</span>
+      <span style="min-width:0"><b>${esc(d.device_label)}</b><small>${esc(d.loc.store)} · ${esc(d.loc.place)}</small></span>
+      <span class="tv num"><span class="dot ${s === "off" ? "" : s}"></span>${f(d.data?.t_room)} °C</span></a>`; }).join("")
+    || `<div class="muted" style="padding:8px 10px;font-size:12px">Sem câmaras.</div>`;
+
+  if (S.view === "overview"){
+    const online = all.filter(d => d.comm === "online");
+    $("kOnline").innerHTML = `${online.length}<small> / ${all.length}</small>`;
+    $("kAlarms").textContent = alarms.length;
+    $("kAlarmBox").classList.toggle("alarm", alarms.length > 0);
+    $("kAlarmIc").className = "ibox " + (alarms.length ? "crit" : "ok");
+    $("kDefrost").textContent = online.filter(d => d.data?.defrost).length;
+    $("kDoors").textContent = online.filter(d => d.data?.door_open).length;
+    $("kPower").innerHTML = `${f(online.reduce((s,d) => s + (d.data?.power_kw || 0), 0),2)}<small> kW</small>`;
+
+    const vis = all.filter(visible);
+    $("fCount").textContent = `${vis.length} de ${all.length} câmaras`;
+    const groups = new Map();
+    vis.forEach(d => { const g = `${d.slug.country}/${d.slug.zone}/${d.slug.store}`; if (!groups.has(g)) groups.set(g, {loc:d.loc, items:[]}); groups.get(g).items.push(d); });
+    const grank = g => Math.min(...g.items.map(d => RANK[sev(d)]));
+    const gs = [...groups.values()].sort((a,b) => (grank(a) - grank(b)) || (a.loc.country+a.loc.zone+a.loc.store).localeCompare(b.loc.country+b.loc.zone+b.loc.store, "pt"));
+    $("groups").innerHTML = gs.length ? gs.map(g => {
+      g.items.sort((a,b) => (RANK[sev(a)] - RANK[sev(b)]) || a.loc.place.localeCompare(b.loc.place, "pt") || a.device_label.localeCompare(b.device_label));
+      return `<div class="group"><h3>${I("store")}${esc(g.loc.store)} <span class="path">${esc(g.loc.country)} › ${esc(g.loc.zone)}</span></h3><div class="grid">${g.items.map(card).join("")}</div></div>`;
+    }).join("") : `<div class="empty">${all.length ? "Nenhuma câmara corresponde aos filtros." : "À espera de dados das câmaras…<br><small>Tópicos subscritos: pais/zona/loja/local/equipamento/state</small>"}</div>`;
+    const ac = $("sideAlarmCount"); ac.textContent = alarms.length; ac.className = "badge " + (alarms.length ? "crit" : "ok");
+    $("alarmList").innerHTML = alarmRows(alarms);
+    $("eventList").innerHTML = S.events.length ? S.events.slice(0, 12).map(evRow).join("") : `<li class="s">Sem eventos.</li>`;
+  }
+  if (S.view === "alarms"){
+    const ac = $("aCount"); ac.textContent = alarms.length; ac.className = "badge " + (alarms.length ? "crit" : "ok");
+    $("aList").innerHTML = alarmRows(alarms);
+    $("aEvents").innerHTML = S.events.length ? S.events.map(evRow).join("") : `<li class="s">Sem eventos.</li>`;
+  }
+  if (S.view === "detail") renderDetail();
+}
+
+function renderBroker(){
+  const p = $("mqttPill"), st = S.broker.state;
+  const map = { connected: ["ok", "● MQTT LIGADO"], disconnected: ["warn", "● MQTT SEM LIGAÇÃO"], disabled: ["", "MQTT DESATIVADO"], demo: ["cold", "● MODO DEMO"] };
+  const [cls, txt] = map[st] || ["", st];
+  p.className = "mqtt " + cls; p.textContent = txt;
+  p.title = (S.broker.error ? S.broker.error + " · " : "") + (S.broker.since ? `desde ${dt(S.broker.since)}` : "");
+  $("brokerL1").textContent = st === "demo" ? "Dados simulados" : st === "disabled" ? "Broker MQTT" : "Dados recebidos via";
+  $("brokerL2").textContent = st === "demo" ? "modo de demonstração" : st === "disabled" ? "não configurado" : "broker Mosquitto" + (S.broker.host ? ` · ${S.broker.host}` : "");
+}
+
+document.addEventListener("click", e => { const el = e.target.closest("[data-key]"); if (el) location.hash = href(el.dataset.key); });
+$("menuBtn").onclick = () => $("sb").classList.toggle("open");
+
+/* ================= navegação ================= */
+async function loadDetail(key){
+  try { const r = await fetch("api/device?id=" + encodeURIComponent(key), {cache:"no-store"}); if (!r.ok) throw 0; S.detail = await r.json(); }
+  catch(e){ S.detail = null; }
+  schedule();
+}
+function route(){
+  const m = location.hash.match(/^#\/camara\/(.+)$/);
+  S.detailKey = m ? decodeURIComponent(m[1]) : null;
+  S.view = S.detailKey ? "detail" : location.hash === "#/alarmes" ? "alarms" : "overview";
+  ["overview","alarms","detail"].forEach(v => $(v).classList.toggle("hidden", S.view !== v));
+  S.detail = null; $("sb").classList.remove("open");
+  if (S.detailKey){ loadDetail(S.detailKey); window.scrollTo(0,0); }
+  else document.title = S.view === "alarms" ? "ColdRoom | Alarmes e eventos" : `ColdRoom | ${S.console.name || "Consola central"}`;
+  schedule();
+}
+window.addEventListener("hashchange", route);
+
+/* ================= detalhe ================= */
+function statV(id, v){
+  const ok = isNormal(v), na = v == null;
+  $(id).innerHTML = na ? `<div class="v na">–</div>` : `<div class="v ${ok ? "ok" : "bad"}">${I(ok ? "check" : "warn")}${esc(ok ? (typeof v === "string" ? v : "Normal") : v)}</div>`;
+  $(id + "Ic").className = "ibox " + (na ? "off" : ok ? "" : "warn");
+}
+const st = (cls, txt) => `<span class="s ${cls}"><span class="dot ${cls === "on" ? "ok" : cls === "bad" ? "warn" : ""}"></span>${txt}</span>`;
+
+function renderDetail(){
+  const d = S.detail || S.devices.get(S.detailKey);
+  if (!d){ $("dName").textContent = "Câmara desconhecida"; return; }
+  const x = d.data || {}, s = sev(d);
+  document.title = `ColdRoom | ${d.device_label} · ${d.loc.store}`;
+  $("dName").textContent = d.name;
+  $("dCrumbs").innerHTML = I("pin") + [["PAÍS", d.loc.country], ["ZONA", d.loc.zone], ["LOJA", d.loc.store], ["LOCAL", d.loc.place]]
+    .filter(([,v]) => v).map(([k,v]) => `<i>${k}</i><span>${esc(v)}</span>`).join(`<span class="sep">›</span>`);
+  $("dTopic").textContent = d.topic;
+  $("dTplus").textContent = tplus(x.uptime_s); $("dTplusP").classList.toggle("hidden", x.uptime_s == null);
+  $("dMode").textContent = x.mode || "—";
+  $("dMode").className = "pill " + (/standby|parado|idle/i.test(x.mode || "") ? "amber" : "ice");
+  $("dSpeed").textContent = x.speed ? `${f(x.speed,0)}×` : ""; $("dSpeedP").classList.toggle("hidden", !x.speed);
+  const comm = {online:["ok","● ONLINE"], stale:["crit","● SEM COMUNICAÇÃO"], offline:["crit","● OFFLINE"], waiting:["off","A AGUARDAR"]}[d.comm] || ["off", d.comm];
+  $("dComm").className = "pill num " + comm[0]; $("dComm").textContent = `${comm[1]} · ${ago(d.last_seen)}`;
+
+  const al = d.alarms || [];
+  $("dAlarmBox").classList.toggle("has", al.length > 0);
+  $("dAlarmIc").className = "ibox " + (al.length ? "crit" : "ok");
+  $("dAlarmCount").textContent = al.length;
+  $("dAlarmList").innerHTML = al.length ? al.map(a => `<div><span class="dot ${a.severity === "critical" ? "crit" : "warn"}"></span><span>${esc(a.text)} <span class="muted">(${esc(a.code)})</span></span></div>`).join("") : "Sem alarmes ativos";
+  statV("dPhase", x.phase_monitor); statV("dOil", x.comp_oil); statV("dRefr", x.refrigerant);
+
+  $("dRoomTile").className = "tile temp-t main " + (s === "crit" ? "crit" : s === "warn" ? "warn" : "");
+  $("dRoom").textContent = `${f(x.t_room)} °C`;
+  $("dSp").textContent = `Setpoint ${f(x.t_setpoint)} °C`;
+  $("dSupply").textContent = `${f(x.t_supply)} °C`;
+  $("dReturn").textContent = `${f(x.t_return)} °C`;
+  $("dEvap").textContent = `${f(x.t_evap)} °C`;
+
+  $("dComp").innerHTML = x.comp_on == null ? st("idle","–") : x.comp_on ? st("on","A trabalhar") : st("idle","Parado");
+  $("dCompLoad").textContent = `${f(x.comp_load ?? 0,0)}%`;
+  $("dFans").innerHTML = x.fans_on == null ? st("idle","–") : x.fans_on ? st("on","Ligados") : st("idle","Desligados");
+  $("dEev").textContent = `${f(x.eev_open ?? 0,0)}%`;
+  $("dEevBar").style.width = Math.max(0, Math.min(100, x.eev_open || 0)) + "%";
+  $("dDefrost").innerHTML = x.defrost == null ? st("idle","–") : x.defrost ? st("bad","Ativo") : st("idle","Inativo");
+  $("dDoor").innerHTML = x.door_open == null ? st("idle","–") : x.door_open ? st("bad","Aberta") : st("on","Fechada");
+  $("dProt").innerHTML = x.comp_protection == null ? st("idle","–") : isNormal(x.comp_protection) ? st("on", esc(x.comp_protection)) : st("bad", esc(x.comp_protection));
+
+  const M = [["gauge","Pressão de aspiração", x.p_suction, 2, "bar"], ["gauge","Pressão de descarga", x.p_discharge, 2, "bar"],
+    ["heat","Superaquecimento*", x.superheat, 2, "K"], ["snow","Subarrefecimento*", x.subcooling, 2, "K"],
+    ["bolt","Tensão trifásica", x.voltage, 1, "V"], ["plug","Corrente elétrica", x.current, 2, "A"],
+    ["pulse","Potência instantânea", x.power_kw, 2, "kW"], ["bars","Energia acumulada", x.energy_kwh, 2, "kWh"],
+    ["timer","Horas do compressor", x.comp_hours, 1, "h"], ["fan","Horas dos ventiladores", x.fans_hours, 1, "h"]];
+  $("dMetrics").innerHTML = M.map(([ic,k,v,dg,u]) => `<div class="metric"><div class="h">${I(ic)}<span>${k}</span></div><div class="v num">${f(v,dg)}<small>${u}</small></div></div>`).join("");
+
+  $("dLast").textContent = d.last_seen ? `${dt(d.last_seen)} (${ago(d.last_seen)})` : "nunca";
+  $("dCount").textContent = d.msg_count ?? "–";
+  $("dFirst").textContent = dt(d.first_seen);
+  if (S.detail){
+    $("dEvents").innerHTML = (S.detail.events||[]).length ? S.detail.events.slice(0,30).map(evRow).join("") : `<li class="s">Sem eventos.</li>`;
+    const raw = JSON.stringify(S.detail.raw, null, 2);
+    if ($("dRaw").textContent !== raw) $("dRaw").textContent = raw;
+    drawChart();
+  }
+}
+
+/* ================= gráfico ================= */
+const SERIES = [[1, "#4fd1ff", 2.2], [2, "#7ee0a3", 1.6], [3, "#ffb454", 1.6]];
+function chartData(){
+  const h = (S.detail && S.detail.history) || [];
+  if (!S.range) return h;
+  const t0 = now() - S.range;
+  return h.filter(p => p[0] >= t0);
+}
+function drawChart(){
+  const cv = $("chart"), box = cv.getBoundingClientRect();
+  if (!box.width) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(box.width*dpr) || cv.height !== Math.round(box.height*dpr)){ cv.width = Math.round(box.width*dpr); cv.height = Math.round(box.height*dpr); }
+  const c = cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  const W = box.width, H = box.height, L = 50, R = 12, T = 10, B = 24;
+  c.clearRect(0,0,W,H);
+  const pts = chartData();
+  c.font = "11px system-ui, sans-serif"; c.fillStyle = "#7d95ab";
+  if (pts.length < 2){ c.fillText("A recolher histórico… (1 ponto a cada " + (S.console.history_interval||10) + " s)", L, H/2); $("readout").textContent = ""; return; }
+  let lo = Infinity, hi = -Infinity;
+  pts.forEach(p => [1,2,3,4].forEach(i => { if (p[i] != null){ lo = Math.min(lo, p[i]); hi = Math.max(hi, p[i]); } }));
+  if (hi - lo < 2){ const m = (hi+lo)/2; lo = m-1; hi = m+1; }
+  const pad = (hi-lo)*.1; lo -= pad; hi += pad;
+  const t0 = pts[0][0], t1 = pts[pts.length-1][0];
+  const X = t => L + (t - t0) / Math.max(1, t1 - t0) * (W - L - R);
+  const Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  c.strokeStyle = "#1a3149"; c.lineWidth = 1;
+  const step = niceStep((hi-lo)/5);
+  for (let v = Math.ceil(lo/step)*step; v <= hi; v += step){
+    const y = Math.round(Y(v)) + .5; c.beginPath(); c.moveTo(L, y); c.lineTo(W-R, y); c.stroke();
+    c.fillText(v.toFixed(step < 1 ? 1 : 0) + " °C", 6, y + 4);
+  }
+  const n = Math.max(2, Math.floor((W-L-R)/110));
+  for (let i = 0; i <= n; i++){
+    const t = t0 + (t1-t0)*i/n, x = X(t);
+    const lbl = new Date(t*1000).toLocaleTimeString("pt-PT", t1 - t0 < 1200 ? {hour:"2-digit", minute:"2-digit", second:"2-digit"} : {hour:"2-digit", minute:"2-digit"});
+    const tw = c.measureText(lbl).width;
+    c.fillText(lbl, Math.min(W - R - tw, Math.max(L, x - tw/2)), H - 6);
+  }
+  c.save(); c.setLineDash([5,4]); c.strokeStyle = "#9db2c4"; c.lineWidth = 1.2; line(c, pts, 4, X, Y); c.restore();
+  c.lineJoin = "round";
+  SERIES.slice().reverse().forEach(([i, col, w]) => { c.strokeStyle = col; c.lineWidth = w; line(c, pts, i, X, Y); });
+  if (S.hover != null){
+    const mx = S.hover; let best = pts[0];
+    pts.forEach(p => { if (Math.abs(X(p[0]) - mx) < Math.abs(X(best[0]) - mx)) best = p; });
+    const x = Math.round(X(best[0])) + .5;
+    c.strokeStyle = "#3a5f80"; c.lineWidth = 1; c.beginPath(); c.moveTo(x, T); c.lineTo(x, H-B); c.stroke();
+    SERIES.forEach(([i, col]) => { if (best[i] != null){ c.fillStyle = col; c.beginPath(); c.arc(x, Y(best[i]), 3.5, 0, 7); c.fill(); } });
+    $("readout").textContent = `${hhmm(best[0])} · Câmara ${f(best[1])} °C · Insuflação ${f(best[2])} °C · Retorno ${f(best[3])} °C · Setpoint ${f(best[4])} °C · Evaporador ${f(best[5])} °C`;
+  } else $("readout").textContent = `${pts.length} pontos · ${hhmm(t0)} – ${hhmm(t1)}`;
+}
+function line(c, pts, i, X, Y){
+  c.beginPath(); let started = false;
+  pts.forEach(p => { if (p[i] == null){ started = false; return; } const x = X(p[0]), y = Y(p[i]); started ? c.lineTo(x,y) : c.moveTo(x,y); started = true; });
+  c.stroke();
+}
+function niceStep(r){ const p = Math.pow(10, Math.floor(Math.log10(r))); const m = r/p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
+$("chart").addEventListener("mousemove", e => { S.hover = e.offsetX; drawChart(); });
+$("chart").addEventListener("mouseleave", () => { S.hover = null; drawChart(); });
+$("ranges").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  S.range = +b.dataset.r; [...$("ranges").children].forEach(x => x.classList.toggle("sel", x === b)); drawChart();
+});
+window.addEventListener("resize", () => { if (S.view === "detail") drawChart(); });
+
+/* ================= arranque ================= */
+setInterval(() => { $("clock").textContent = new Date().toLocaleString("pt-PT", {weekday:"short", day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit"}); schedule(); }, 1000);
+route();
+loadState().catch(() => {}).finally(connect);
+</script>
+</body>
+</html>

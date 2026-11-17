@@ -1,0 +1,21 @@
+[Unit]
+Description=ColdRoom - Configuracao Wi-Fi do Pi por Bluetooth LE
+After=bluetooth.service network-online.target
+Requires=bluetooth.service
+
+[Service]
+Type=simple
+# root: precisa do BlueZ (D-Bus) e do wpa_cli
+User=root
+WorkingDirectory=/opt/coldroom-console
+ExecStart=/usr/bin/python3 /opt/coldroom-console/coldroom_ble.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+ProtectSystem=full
+ProtectHome=true
+# Sem PrivateTmp: o wpa_cli recebe as respostas por um socket em /tmp
+# que o wpa_supplicant (fora deste servico) tem de conseguir ver
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,22 @@
+[Unit]
+Description=ColdRoom - Consola central (MQTT -> web)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/coldroom-console
+ExecStart=/usr/bin/python3 /opt/coldroom-console/coldroom_console.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+# Endurecimento básico
+NoNewPrivileges=true
+ProtectSystem=strict
+# read-only: o paho-mqtt esta em ~/.local (pip --user)
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
