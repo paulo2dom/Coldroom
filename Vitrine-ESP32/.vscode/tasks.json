@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Vitrine: enviar para o ESP32 (COM16)",
+            "type": "shell",
+            "command": "py -m mpremote connect COM16 cp simulator.py mqtt_pub.py location.py netcfg.py ble_setup.py board.py index.html config.py main.py : + reset",
+            "problemMatcher": []
+        },
+        {
+            "label": "Vitrine: consola serie do ESP32 (COM16)",
+            "type": "shell",
+            "command": "py -m mpremote connect COM16 repl",
+            "problemMatcher": []
+        },
+        {
+            "label": "Vitrine: pre-visualizacao no PC (http://127.0.0.1:8767)",
+            "type": "shell",
+            "command": "py desktop/preview.py",
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "Vitrine: testes do simulador",
+            "type": "shell",
+            "command": "py tests/test_simulator.py",
+            "problemMatcher": []
+        }
+    ]
+}

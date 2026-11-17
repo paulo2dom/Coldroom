@@ -41,4 +41,24 @@ for _ in range(60):s.step(1)
 a=s.snapshot()
 assert a['defrost'] and a['voltage']==0 and a['current']==0 and a['power_kw']==0, a['power_kw']
 assert s.room<t0+0.5, 'camara aqueceu com resistencia sem tensao'
-print('OK: dinamica, eventos, alarme, bloqueio, reset, degelo, comandos, aspiracao e degelo sem fase')
+# Alarmes de temperatura: sem falsos alarmes num dia normal; ALTA quando o compressor para
+s=ColdRoom()
+seen=set()
+for _ in range(24*3600):
+    s.step(1); seen.update(s.snapshot()['alarms'])
+assert not seen, seen
+s.action({'action':'fault','name':'phase_fault','value':True})
+t=None
+for i in range(3*3600):
+    s.step(1)
+    if 'TEMPERATURA ALTA' in s.snapshot()['alarms']:
+        t=i; break
+assert t is not None and t > 600, t
+s=ColdRoom()
+s.room=-3.0
+for _ in range(400): s.step(1)
+s.room=-3.0
+for _ in range(700):
+    s.step(1); s.room=min(s.room,-1.5)
+assert 'TEMPERATURA BAIXA' in s.snapshot()['alarms']
+print('OK: dinamica, eventos, alarme, bloqueio, reset, degelo, comandos, aspiracao, degelo sem fase e alarmes de temperatura')

@@ -6,6 +6,11 @@ import math
 import time
 
 
+TEMP_HIGH_K = 4.0      # alarme de temperatura alta: setpoint + 4 K ...
+TEMP_LOW_K = 3.0       # ... ou baixa: setpoint - 3 K
+TEMP_DELAY_S = 600     # durante 10 min simulados (fora do degelo)
+
+
 def clamp(x, low, high):
     return max(low, min(high, x))
 
@@ -48,6 +53,8 @@ class ColdRoom:
         self.history = []
         self.events = []
         self.last_sample = -30
+        self.high_s = 0
+        self.low_s = 0
         self.add_event('INFO', 'Simulador inicializado; dados inteiramente ficticios')
 
     def add_event(self, level, message):
@@ -175,6 +182,9 @@ class ColdRoom:
             self.runtime_compressor += dt / 3600
         if self.fans:
             self.runtime_fans += dt / 3600
+        # Temporizacao dos alarmes de temperatura (iguais aos da vitrine)
+        self.high_s = self.high_s + dt if (self.room > self.target + TEMP_HIGH_K and not self.defrost) else 0
+        self.low_s = self.low_s + dt if self.room < self.target - TEMP_LOW_K else 0
         if self.sim_seconds - self.last_sample >= 30:
             self.history.append([round(self.sim_seconds / 60, 1), round(self.room, 2), round(self.discharge_air, 2), round(self.return_air, 2)])
             if len(self.history) > 80:
@@ -195,6 +205,10 @@ class ColdRoom:
             alarms.append('REFRIGERANTE BAIXO')
         if self.trip:
             alarms.append('COMPRESSOR BLOQUEADO')
+        if getattr(self, 'high_s', 0) > TEMP_DELAY_S:
+            alarms.append('TEMPERATURA ALTA')
+        if getattr(self, 'low_s', 0) > TEMP_DELAY_S:
+            alarms.append('TEMPERATURA BAIXA')
         return {
             'simulated': True, 'device': 'Pico W / ColdRoom SIM',
             'sim_seconds': round(self.sim_seconds), 'speed': self.speed,

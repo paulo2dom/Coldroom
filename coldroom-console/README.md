@@ -152,6 +152,23 @@ formato de referência:
 Se o teu Pico usar outras chaves, abre a câmara na consola → **Payload JSON
 recebido** e acrescenta a chave à lista correspondente em `normalize()`.
 
+### Tipo de equipamento e hardware
+
+A consola usa dois campos do payload para identificar cada equipamento, em vez de assumir que todos são câmaras num Pico W:
+
+| Campo | Exemplo | Uso na consola |
+|---|---|---|
+| `device` | `"Pico W / ColdRoom SIM"`, `"ESP32-S3 / Vitrine SIM"`, `"Raspberry Pi / ColdRoom exemplo"` | A parte antes de ` / ` é o hardware, mostrado no cartão e no detalhe |
+| `type` | `"vitrine"` | Vitrine expositora; sem este campo assume-se câmara frigorífica |
+
+Para a **vitrine (VT-01, ESP32-S3)** a consola adapta o detalhe:
+- Os títulos passam a "Ar da vitrine", "Alimentação 230 V", "Iluminação LED", "Carga de R290", "Portas de vidro" e "Pressostato de alta".
+- O cartão "Ar de retorno" passa a mostrar o produto (sonda HACCP) e o gráfico mostra o produto em vez do retorno.
+- Aparece um painel extra com a hora e o estado da loja, os clientes, as aberturas de porta, a iluminação, o anti-embaciamento, os vidros, a humidade, a condensação, o HACCP e o funcionamento do compressor.
+- No cartão da vista geral aparecem o produto, as portas abertas (P1–P3) e o estado da loja.
+
+Estes campos ficam em `data.vitrine` (ver `vitrine_extra()`).
+
 ## Estado do MQTT (topo da consola)
 
 | Indicador | Quando |

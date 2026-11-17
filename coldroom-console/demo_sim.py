@@ -115,7 +115,7 @@ def step(s, now=None):
         "simulated": True,
         "example": s["example"],
         "name": "Câmara frigorífica %s%s" % (device, " (exemplo)" if s["example"] else ""),
-        "device": "ColdRoom exemplo" if s["example"] else "ColdRoom demo",
+        "device": "Raspberry Pi / ColdRoom exemplo" if s["example"] else "Raspberry Pi / ColdRoom demo",
         "sim_seconds": int(now - s["start"]), "speed": 1,
         "target": sp, "ambient": s["ambient"],
         "room": round(t, 2),

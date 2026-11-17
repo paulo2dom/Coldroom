@@ -55,6 +55,9 @@ HP_TRIP_BAR = 20.0                # pressostato de alta
 HYST = 0.8                        # histerese do termostato (+/- K)
 MIN_OFF_S = 180                   # protecao anti ciclos curtos do compressor
 HACCP_LIMIT = 5.0
+AJAR_DOOR = 1                     # porta que fica mal fechada (0 = P1, 1 = P2, 2 = P3)
+AJAR_INFIL = 0.0003               # folga da porta: cerca de 3/4 de uma porta aberta, continuamente
+DOOR_ALARM_S = 120                # porta aberta / mal fechada ha mais de 2 min
 
 
 class Showcase:
@@ -82,6 +85,7 @@ class Showcase:
         self.door_timer = [0.0] * DOORS
         self.door_manual = [False] * DOORS
         self.door_cont = [0.0] * DOORS
+        self.ajar_s = 0.0
         self.doors = [False] * DOORS
         self.door_openings = 0
         self.schedule = 'auto'
@@ -244,6 +248,10 @@ class Showcase:
             self.doors[i] = self.door_manual[i] or self.door_timer[i] > 0
             self.door_cont[i] = self.door_cont[i] + dt if self.doors[i] else 0.0
         open_doors = sum(1 for d in self.doors if d)
+        # Porta mal fechada: o sensor magnetico deteta a folga (P2 nao fica "fechada")
+        self.ajar_s = self.ajar_s + dt if f['door_ajar'] else 0.0
+        if f['door_ajar'] and not self.doors[AJAR_DOOR] and self.ajar_s <= dt:
+            self.add_event('WARN', 'Sensor da porta %d: porta nao fechou totalmente' % (AJAR_DOOR + 1))
 
         # Degelo por paragem do compressor (programado)
         self.since_defrost += dt
@@ -298,7 +306,7 @@ class Showcase:
         if not self.fans:
             cap *= 0.25
         cap *= (1 - 0.6 * self.ice) * clamp(1 - max(0.0, self.cond - 45) / 40, 0.4, 1)
-        infil = 0.0004 * open_doors + (0.0002 if f['door_ajar'] else 0)
+        infil = 0.0004 * open_doors + (AJAR_INFIL if f['door_ajar'] and not self.doors[AJAR_DOOR] else 0)
         gain = (self.ambient - self.air) * (0.00011 + infil)
         gain += (0.00025 if self.lights else 0) + 0.0001 * self.antifog_pct / 100 + (0.00008 if self.fans else 0)
         self.air += (gain - cap + 0.0006 * (self.product - self.air)) * dt
@@ -312,7 +320,7 @@ class Showcase:
         self.evap += (evap_t - self.evap) * min(1, dt / (900 if self.defrost else 20))
         supply_t = self.evap + (0.55 if self.fans else 0.95) * (self.air - self.evap)
         self.supply += (supply_t - self.supply) * min(1, dt / 10)
-        self.return_air += ((self.air + 0.5 + (1.5 if open_doors else 0)) - self.return_air) * min(1, dt / 8)
+        self.return_air += ((self.air + 0.5 + (1.5 if open_doors or f['door_ajar'] else 0)) - self.return_air) * min(1, dt / 8)
 
         # Pressoes (curva aproximada do R290)
         suct_t = psat_r290(self.evap - 3) * (0.8 if f['gas_leak'] else 1) if self.compressor else psat_r290(self.evap)
@@ -368,8 +376,10 @@ class Showcase:
             out.append('TEMPERATURA BAIXA')
         if self.product_high_s > 1800:
             out.append('HACCP: PRODUTO > 5 C')
-        if max(self.door_cont) > 120:
+        if max(self.door_cont) > DOOR_ALARM_S:
             out.append('PORTA ABERTA')
+        if self.ajar_s > DOOR_ALARM_S:
+            out.append('PORTA MAL FECHADA (P%d)' % (AJAR_DOOR + 1))
         if self.trip:
             out.append('ALTA PRESSAO (PRESSOSTATO)')
         if self.cond > 50:
@@ -402,7 +412,10 @@ class Showcase:
             'duty_pct': round(self.duty * 100), 'compressor_starts': self.compressor_starts,
             'fans': self.fans, 'condenser_fan': self.cond_fan, 'defrost': self.defrost,
             'defrost_in_min': max(0, int((DEFROST_EVERY - self.since_defrost) // 60)),
-            'door': any(self.doors), 'doors': list(self.doors), 'doors_manual': list(self.door_manual),
+            'door': any(self.doors) or f['door_ajar'],
+            'doors': [d or (f['door_ajar'] and i == AJAR_DOOR) for i, d in enumerate(self.doors)],
+            'doors_ajar': [f['door_ajar'] and i == AJAR_DOOR for i in range(DOORS)],
+            'doors_manual': list(self.door_manual),
             'door_openings': self.door_openings,
             'store_open': self.store_open, 'schedule': self.schedule, 'traffic': self.traffic,
             'lights': self.lights, 'antifog_pct': self.antifog_pct, 'fog_pct': round(self.fog),

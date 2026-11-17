@@ -23,7 +23,7 @@ MQTT_INTERVAL = 5      # segundos reais entre publicacoes
 #   py desktop/vitrine_ble.py vitrine add ...
 WIFI_NETWORKS = [
     {'ssid': WIFI_SSID, 'password': WIFI_PASSWORD, 'mqtt_host': MQTT_HOST},
-    {'ssid': 'NOS_Internet_0D19', 'password': '35045546', 'mqtt_host': None},  # rede do config antigo (05/11)
+    {'ssid': 'NOS_Internet_0D19', 'password': '35045546', 'mqtt_host': None},  # broker descoberto automaticamente (anuncio do Pi)
     # {'ssid': 'OutraRede', 'password': 'password123', 'mqtt_host': '192.168.1.50'},
 ]
 
@@ -34,5 +34,5 @@ BLE_WINDOW_S = 300        # sem Wi-Fi conhecido ou botao BOOT premido 1 s: 5 min
 
 # --- Hardware (ESP32-S3 Supermini) ------------------------------------------------
 LED_PIN = 48      # LED da placa
-LED_RGB = True    # True = LED RGB WS2812; False = LED simples
+LED_RGB = True    # LED RGB WS2812 no GPIO48 (testado); False = LED simples
 BUTTON_PIN = 0    # botao BOOT

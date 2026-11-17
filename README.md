@@ -60,6 +60,7 @@ A pasta `Vitrine-ESP32/` é um simulador diferente (vitrine expositora VT-01, pl
 - Tensão trifásica, corrente, potência, energia e horas de funcionamento simuladas
 - Ciclo de degelo, porta aberta, falha de fase, óleo baixo, refrigerante baixo e alta pressão
 - Proteção latched do compressor, rearmar falhas e reiniciar cenários
+- Alarmes de temperatura: **TEMPERATURA ALTA** (setpoint + 4 °C) e **TEMPERATURA BAIXA** (setpoint − 3 °C) ao fim de 10 min simulados, fora do degelo (o mesmo critério da vitrine)
 - Histórico de temperaturas e eventos, aceleração do tempo 1x, 5x e 20x
 
 A lógica é didática: uma porta aberta aumenta a carga térmica; o compressor responde ao setpoint com histerese; durante degelo a refrigeração pára; falhas críticas provocam bloqueio até remover a falha e rearmar. Algumas variáveis são estimativas artificiais para formação, não modelos termodinâmicos ou leituras de sensores. Os limiares são demonstrativos e não devem ser usados para conformidade HACCP ou controlo físico.

@@ -13,7 +13,7 @@ Exemplos:
     py desktop/vitrine_ble.py pi status                            (Raspberry Pi / broker)
 
 O BLE so esta ativo em janelas curtas:
-  ESP32: 3 min apos arrancar, sem Wi-Fi conhecido, ou botao BOOT premido 1 s (LED azul)
+  ESP32: 3 min apos arrancar, sem Wi-Fi conhecido, ou botao BOOT premido 1 s (LED RGB azul)
   Pi:  10 min apos arrancar e sempre que nao tem Wi-Fi
 
 AVISO (laboratorio): a ligacao BLE nao e cifrada; a password Wi-Fi passa em claro.
@@ -58,7 +58,7 @@ async def find(target, name, seconds):
     print("A procurar %s durante %d s..." % (label, seconds))
     d = await BleakScanner.find_device_by_filter(match, timeout=seconds)
     if not d:
-        hint = ("botao BOOT do ESP32 premido 1 s (LED azul acende) ou reinicia-o" if target == "vitrine"
+        hint = ("botao BOOT do ESP32 premido 1 s (LED RGB fica azul) ou reinicia-o" if target == "vitrine"
                 else "reinicia o Pi ou o servico: sudo systemctl restart coldroom-ble")
         raise RuntimeError("Nao encontrado. Janela BLE fechada? %s." % hint)
     return d

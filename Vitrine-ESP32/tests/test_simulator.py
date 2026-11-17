@@ -81,14 +81,18 @@ assert first_alarm(s, 'TEMPERATURA ALTA', 5 * 3600) is not None
 s.step(1)
 assert s.superheat >= 15 or not s.compressor
 
-# Porta mal fechada: o sensor diz "fechada" mas o compressor trabalha muito mais
+# Porta mal fechada: o sensor deteta a folga -> alarme em 2 min; o compressor trabalha muito mais
 s = Showcase()
 s.action({'action': 'schedule', 'value': 'open'})
 warm(s, 2 * 3600)
 duty0 = s.duty
 s.action({'action': 'fault', 'name': 'door_ajar', 'value': True})
+t = first_alarm(s, 'PORTA MAL FECHADA (P2)', 600)
+assert t is not None and t <= 125, t
+d = s.snapshot()
+assert d['doors'][1] and d['doors_ajar'][1] and d['door']
 warm(s, 2 * 3600)
-assert 'PORTA ABERTA' not in s.alarms() and s.duty > duty0 + 0.15
+assert s.duty > duty0 + 0.15
 
 # Resistencia anti-embaciamento avariada com humidade alta -> vidros embaciados
 s = Showcase()

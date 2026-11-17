@@ -32,5 +32,5 @@ BLE_WINDOW_S = 300        # sem Wi-Fi conhecido ou botao BOOT premido 1 s: 5 min
 
 # --- Hardware (ESP32-S3 Supermini) ------------------------------------------------
 LED_PIN = 48      # LED da placa
-LED_RGB = True    # True = LED RGB WS2812; False = LED simples
+LED_RGB = True    # LED RGB WS2812 no GPIO48 (testado); False = LED simples
 BUTTON_PIN = 0    # botao BOOT

@@ -24,6 +24,25 @@ def cfg(name, default=None):
     return getattr(config, name, default)
 
 
+def pi_health():
+    """IP e temperatura do CPU do Raspberry Pi (onde correm as camaras de exemplo)."""
+    out = {}
+    try:
+        with open("/sys/class/thermal/thermal_zone0/temp") as f:
+            out["mcu_temp_c"] = round(int(f.read().strip()) / 1000, 1)
+    except (OSError, ValueError):
+        pass
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("10.255.255.255", 1))   # nao envia nada; so escolhe a interface
+        out["ip"] = s.getsockname()[0]
+        s.close()
+    except OSError:
+        pass
+    return out
+
+
 def make_client(mqtt, client_id):
     try:  # paho-mqtt 2.x
         return mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
@@ -81,8 +100,10 @@ def main():
 
     while not stop.is_set():
         now = time.time()
+        health = pi_health()
         for sim, client, _ in devices:
             payload = demo_sim.step(sim, now)
+            payload.update(health)
             if client.is_connected():
                 client.publish(sim["base"] + "/state", json.dumps(payload), qos=0, retain=True)
         stop.wait(demo_sim.STEP)

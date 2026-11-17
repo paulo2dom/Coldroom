@@ -1,5 +1,7 @@
-"""Hardware do ESP32-S3 Supermini: LED RGB WS2812 (GPIO48) e botao BOOT (GPIO0).
+"""Hardware do ESP32-S3 Supermini: LED RGB WS2812 (GPIO48, junto ao chip) e botao BOOT (GPIO0).
 
+O LED azul a piscar junto ao USB-C ("BAT") e do carregador de bateria: pisca
+sem bateria ligada e nao e controlado pelo programa.
 Opcional no config.py: LED_PIN, LED_RGB (False = LED simples), BUTTON_PIN.
 """
 import machine
@@ -35,7 +37,7 @@ def button():
 
 
 def led(on):
-    """LED aceso = Bluetooth ativo (no WS2812: azul fraco)."""
+    """LED aceso = Bluetooth ativo (azul)."""
     global _state
     on = bool(on)
     if on == _state:

@@ -4,7 +4,8 @@ Origem das redes:
   - config.py: WIFI_NETWORKS (predefinidas, editadas no PC)
   - networks.json: redes adicionadas/removidas por Bluetooth (BLE)
 Cada rede: {'ssid': ..., 'password': ..., 'mqtt_host': ...}. O mqtt_host e o IP
-do Raspberry Pi (broker) NESSA rede; se faltar, usa-se config.MQTT_HOST.
+do Raspberry Pi (broker) NESSA rede; se faltar (None), o broker e descoberto
+automaticamente pelo anuncio UDP que o Pi envia (porta 47830).
 """
 import json
 import time
@@ -51,7 +52,7 @@ def load(config):
 
 def public(nets, default_mqtt=None):
     """Lista sem passwords, para enviar por BLE."""
-    return [{'ssid': n['ssid'], 'mqtt_host': n.get('mqtt_host') or default_mqtt,
+    return [{'ssid': n['ssid'], 'mqtt_host': n.get('mqtt_host') or 'auto (anuncio do Pi)',
              'source': n.get('source', '?')} for n in nets]
 
 

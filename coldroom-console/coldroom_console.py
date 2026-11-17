@@ -2,7 +2,8 @@
 """
 ColdRoom · Consola central
 --------------------------
-Recolhe o estado de várias câmaras frigoríficas (Pico W) através do Mosquitto
+Recolhe o estado de vários equipamentos de frio (câmaras no Pico W, vitrine no ESP32-S3,
+exemplos no Raspberry Pi) através do Mosquitto
 e serve uma consola web em tempo real (Server-Sent Events).
 
 Pensado para o Raspberry Pi Zero 2 W: só depende de paho-mqtt
@@ -146,10 +147,59 @@ def normalize(p):
     trip = p.get("trip") if isinstance(p, dict) else None
     if n["comp_protection"] is None and isinstance(trip, bool):
         n["comp_protection"] = "DISPARADA" if trip else "Normal"
+    # Tipo de equipamento e hardware (campo "device": "<hardware> / <simulador>")
+    raw_type = str(p.get("type") or "").lower() if isinstance(p, dict) else ""
+    n["kind"] = "vitrine" if raw_type == "vitrine" else "camara"
+    dev_txt = p.get("device") if isinstance(p, dict) else None
+    n["hardware"] = str(dev_txt).split(" / ")[0].strip() if dev_txt else None
+    n["model"] = text(p.get("model")) if isinstance(p, dict) else None
+    # Hardware: temperatura do chip, IP e Wi-Fi (Pico W, ESP32-S3 ou Raspberry Pi)
+    wifi = p.get("wifi") if isinstance(p, dict) and isinstance(p.get("wifi"), dict) else {}
+    n["mcu_temp"] = num(pick(p, "mcu_temp_c", "chip_temp", "cpu_temp"))
+    n["ip"] = text(pick(p, "ip", "wifi.ip") or wifi.get("ip"))
+    n["ssid"] = text(pick(p, "ssid", "wifi.ssid") or wifi.get("ssid"))
+    n["rssi"] = num(pick(p, "rssi", "wifi.rssi"))
+    n["dev_uptime_s"] = num(pick(p, "uptime_s"))
+    n["reset_cause"] = text(pick(p, "reset_cause"))
+    if n["kind"] == "vitrine":
+        if n["mode"] is None and p.get("phase_ok") is False:
+            n["mode"] = "SEM ENERGIA"
+        elif n["mode"] is None and trip:
+            n["mode"] = "PRESSOSTATO"
+        n["vitrine"] = vitrine_extra(p)
     if n["mode"] is None and n["comp_on"] is not None:
         n["mode"] = ("DEGELO" if n["defrost"] else "PROTEÇÃO" if trip
                      else "REFRIGERAÇÃO" if n["comp_on"] else "STANDBY")
     return n
+
+
+def vitrine_extra(p):
+    """Campos próprios da vitrine expositora (Vitrine SIM / ESP32-S3)."""
+    h = p.get("haccp") if isinstance(p.get("haccp"), dict) else {}
+    doors = p.get("doors") if isinstance(p.get("doors"), list) else []
+    faults = p.get("faults") if isinstance(p.get("faults"), dict) else {}
+    return {
+        "product": num(p.get("product")),
+        "clock": text(p.get("clock")),
+        "store_open": boolish(p.get("store_open")),
+        "schedule": text(p.get("schedule")),
+        "traffic": num(p.get("traffic")),
+        "doors": [bool(d) for d in doors],
+        "door_openings": num(p.get("door_openings")),
+        "lights": boolish(p.get("lights")),
+        "lights_fault": bool(faults.get("lights_fault")),
+        "antifog_pct": num(p.get("antifog_pct")),
+        "fog_pct": num(p.get("fog_pct")),
+        "humidity": num(p.get("humidity")),
+        "ambient": num(p.get("ambient")),
+        "condenser": num(p.get("condenser")),
+        "condenser_fan": boolish(p.get("condenser_fan")),
+        "duty_pct": num(p.get("duty_pct")),
+        "compressor_starts": num(p.get("compressor_starts")),
+        "defrost_in_min": num(p.get("defrost_in_min")),
+        "haccp_min": num(h.get("min")), "haccp_max": num(h.get("max")),
+        "haccp_minutes_above": num(h.get("minutes_above")), "haccp_limit": num(h.get("limit")),
+    }
 
 
 def _normalize(p):
@@ -323,6 +373,9 @@ class Hub:
             dev["data"] = d
             if d.get("name"):
                 dev["name"] = str(d["name"])
+            else:
+                dev["name"] = ("Vitrine expositora " if d.get("kind") == "vitrine"
+                               else "Câmara frigorífica ") + dev["device_label"]
             dev["last_seen"] = now
             dev["msg_count"] += 1
             if dev["lwt"] == "offline":
@@ -331,7 +384,8 @@ class Hub:
             point = None
             if now - dev["last_hist"] >= float(cfg("HISTORY_INTERVAL_S", 10)):
                 dev["last_hist"] = now
-                point = [round(now), d["t_room"], d["t_supply"], d["t_return"], d["t_setpoint"], d["t_evap"]]
+                point = [round(now), d["t_room"], d["t_supply"], d["t_return"], d["t_setpoint"], d["t_evap"],
+                         (d.get("vitrine") or {}).get("product")]
                 dev["history"].append(point)
 
             self._evaluate(dev, now)
@@ -636,6 +690,33 @@ def ticker():
             print(f"[tick] erro: {e}")
 
 
+def start_broker_beacon():
+    """Anuncia o broker na rede local (UDP broadcast de 5 em 5 s).
+
+    O Pico e o ESP32 escutam este anuncio quando nao conseguem ligar ao broker
+    configurado (ex.: noutra rede Wi-Fi, onde o Pi tem outro IP) e usam o IP de
+    quem o enviou. Mensagem: COLDROOM-BROKER {"port": 1883}
+    """
+    port = int(cfg("DISCOVERY_PORT", 47830))
+    if not port:
+        return
+    msg = ("COLDROOM-BROKER " + json.dumps({"port": int(cfg("MQTT_PORT", 1883))})).encode()
+
+    def loop():
+        import socket
+        while True:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                s.sendto(msg, ("255.255.255.255", port))
+                s.close()
+            except OSError:
+                pass   # sem rede: tenta outra vez daqui a 5 s
+            time.sleep(5)
+    threading.Thread(target=loop, daemon=True, name="beacon").start()
+    print(f"[beacon] anuncio do broker em UDP {port}")
+
+
 def main():
     ap = argparse.ArgumentParser(description="ColdRoom · Consola central")
     ap.add_argument("--demo", type=int, nargs="?", const=8, metavar="N",
@@ -647,6 +728,7 @@ def main():
         start_demo(args.demo)
     else:
         start_mqtt()  # as camaras de exemplo chegam pelo broker (servico coldroom-examples)
+        start_broker_beacon()
     threading.Thread(target=ticker, daemon=True, name="ticker").start()
 
     host, port = cfg("HTTP_HOST", "0.0.0.0"), args.port or int(cfg("HTTP_PORT", 8080))

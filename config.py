@@ -22,7 +22,7 @@ MQTT_INTERVAL = 5      # segundos reais entre publicacoes
 # Bluetooth (ficam em networks.json no Pico): py desktop/coldroom_ble.py pico add ...
 WIFI_NETWORKS = [
     {'ssid': WIFI_SSID, 'password': WIFI_PASSWORD, 'mqtt_host': MQTT_HOST},
-    {'ssid': 'NOS_Internet_0D19', 'password': '35045546', 'mqtt_host': None},  # rede do config antigo (05/11)
+    {'ssid': 'NOS_Internet_0D19', 'password': '35045546', 'mqtt_host': None},  # broker descoberto automaticamente (anuncio do Pi)
     # {'ssid': 'OutraRede', 'password': 'password123', 'mqtt_host': '192.168.1.50'},
 ]
 

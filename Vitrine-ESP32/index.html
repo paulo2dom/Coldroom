@@ -336,7 +336,7 @@ function draw(points,sp){
  let lo=Math.floor(Math.min(...vals)-1),hi=Math.ceil(Math.max(...vals)+1);if(hi<=lo)hi=lo+1;
  const x=i=>L+i*(w-L-R)/Math.max(1,points.length-1),y=v=>T+(hi-v)*(h-T-B)/(hi-lo);
  c.lineWidth=1;
- for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,yy=Math.round(y(v))+.5;c.strokeStyle='#17332f';c.beginPath();c.moveTo(L,yy);c.lineTo(w-R,yy);c.stroke();c.fillText(F(v,(hi-lo)<8?1:0)+' °C',4,yy+4)}
+ for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,yy=Math.round(y(v))+.5;c.strokeStyle='#17332f';c.beginPath();c.moveTo(L,yy);c.lineTo(w-R,yy);c.stroke();c.fillText(F(v,(hi-lo)<=12?1:0)+' °C',4,yy+4)}
  if(sp!=null){c.save();c.setLineDash([5,4]);c.strokeStyle='#9db2c4';c.lineWidth=1.2;c.beginPath();c.moveTo(L,y(sp));c.lineTo(w-R,y(sp));c.stroke();c.restore()}
  c.lineJoin='round';
  [[3,'#7ec8ff',1.5],[2,'#ffb454',1.8],[1,'#34e0c0',2.2]].forEach(s=>{c.strokeStyle=s[1];c.lineWidth=s[2];c.beginPath();points.forEach((p,i)=>i?c.lineTo(x(i),y(p[s[0]])):c.moveTo(x(i),y(p[s[0]])));c.stroke()})}

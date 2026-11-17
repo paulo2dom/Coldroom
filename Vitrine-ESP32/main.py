@@ -15,8 +15,45 @@ import config
 import board
 
 sim = Showcase()
+
+# Causa do ultimo arranque (WDT = o watchdog reiniciou o ESP32 depois de um bloqueio)
+_CAUSES = {getattr(machine, n): n.replace('_RESET', '').lower() for n in
+           ('PWRON_RESET', 'HARD_RESET', 'WDT_RESET', 'DEEPSLEEP_RESET', 'SOFT_RESET') if hasattr(machine, n)}
+RESET_CAUSE = _CAUSES.get(machine.reset_cause(), str(machine.reset_cause()))
+print('Arranque: causa', RESET_CAUSE)
+
+# Menos calor: CPU a 160 MHz (o simulador nao precisa de 240 MHz)
+CPU_MHZ = getattr(config, 'CPU_MHZ', 160)
+if CPU_MHZ:
+    try:
+        machine.freq(CPU_MHZ * 1000000)
+    except Exception as e:
+        print('CPU: freq nao alterada', e)
+try:
+    import esp32
+except ImportError:
+    esp32 = None
+
+
+def health():
+    """Temperatura do chip, sinal Wi-Fi e memoria livre (diagnostico de bloqueios)."""
+    out = {'reset_cause': RESET_CAUSE, 'uptime_s': time.ticks_ms() // 1000,
+           'cpu_mhz': machine.freq() // 1000000, 'mem_free': gc.mem_free()}
+    try:
+        out['mcu_temp_c'] = esp32.mcu_temperature()
+    except Exception:
+        pass
+    try:
+        out['ip'] = wlan.ifconfig()[0]
+        out['ssid'] = active_net['ssid'] if active_net else None
+        out['rssi'] = wlan.status('rssi')
+        out['txpower'] = wlan.config('txpower')
+    except Exception:
+        pass
+    return out
 LOCATION, MQTT_TOPIC = load_location(config)
 DEFAULT_MQTT = getattr(config, 'MQTT_HOST', None)
+MQTT_HOST = None   # definido depois de ligar ao Wi-Fi (ou descoberto na rede)
 MQTT_INTERVAL = max(1, getattr(config, 'MQTT_INTERVAL', 5))
 mqtt = None
 mqtt_next = time.ticks_ms()
@@ -101,7 +138,17 @@ if not active_net:
     print('Sem Wi-Fi (estado %d); a reiniciar em 5 s...' % wlan.status())
     time.sleep(5)
     machine.reset()
-MQTT_HOST = active_net.get('mqtt_host') or DEFAULT_MQTT
+# Rede sem 'mqtt_host' (ex.: NOS ou adicionada por BLE sem --mqtt-host): descobre o broker na rede
+MQTT_HOST = active_net.get('mqtt_host')
+# Menos calor: potencia Wi-Fi reduzida (13 dBm) quando o sinal e bom; com sinal fraco fica no maximo
+TXPOWER = getattr(config, 'WIFI_TXPOWER', 13)
+try:
+    rssi = wlan.status('rssi')
+    if TXPOWER and rssi > -67:
+        wlan.config(txpower=TXPOWER)
+    print('Wi-Fi: RSSI %d dBm, potencia %s dBm' % (rssi, wlan.config('txpower')))
+except Exception as e:
+    print('Wi-Fi: potencia nao alterada', e)
 print('Wi-Fi: %s, IP %s, broker %s' % (active_net['ssid'], wlan.ifconfig()[0], MQTT_HOST))
 print('Vitrine SIM (%s) em http://%s:%d' % (board.NAME, wlan.ifconfig()[0], config.HTTP_PORT))
 
@@ -109,6 +156,10 @@ sock = socket.socket()
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind(('0.0.0.0', config.HTTP_PORT))
 sock.listen(2)
+
+# Watchdog: se o ciclo principal parar mais de WDT_S segundos, o ESP32 reinicia sozinho
+WDT_S = getattr(config, 'WDT_S', 30)
+wdt = machine.WDT(timeout=WDT_S * 1000) if WDT_S else None
 sock.settimeout(0.25)
 
 try:
@@ -118,27 +169,68 @@ except AttributeError:
 
 
 # --- MQTT (broker da rede ativa: mqtt_host da rede ou config.MQTT_HOST) ---
+# Se o broker configurado nao responder, procura o anuncio do Raspberry Pi na rede.
+MQTT_PORT = getattr(config, 'MQTT_PORT', 1883)
+mqtt_fails = 0
+
+
+def discover_broker(timeout_s=7):
+    """Escuta o anuncio do Raspberry Pi (UDP 47830) e devolve (ip, porta) ou None."""
+    port = getattr(config, 'DISCOVERY_PORT', 47830)
+    if not port:
+        return None
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('0.0.0.0', port))
+        s.settimeout(1)
+        t0 = time.ticks_ms()
+        while time.ticks_diff(time.ticks_ms(), t0) < timeout_s * 1000:
+            if 'wdt' in globals() and wdt:
+                wdt.feed()
+            try:
+                data, addr = s.recvfrom(128)
+            except OSError:
+                continue
+            if data.startswith(b'COLDROOM-BROKER'):
+                try:
+                    p = json.loads(data[16:]).get('port', 1883)
+                except ValueError:
+                    p = 1883
+                return addr[0], p
+    finally:
+        s.close()
+    return None
 
 
 def mqtt_step():
     """Publica o estado de MQTT_INTERVAL em MQTT_INTERVAL segundos; em falha tenta de novo 15 s depois."""
-    global mqtt, mqtt_next
-    if not MQTT_HOST or time.ticks_diff(time.ticks_ms(), mqtt_next) < 0:
+    global mqtt, mqtt_next, MQTT_HOST, MQTT_PORT, mqtt_fails
+    if time.ticks_diff(time.ticks_ms(), mqtt_next) < 0:
         return
+    if not MQTT_HOST:   # rede sem broker configurado: procurar o anuncio do Pi
+        found = discover_broker()
+        if not found:
+            mqtt_next = time.ticks_add(time.ticks_ms(), 15000)
+            return
+        MQTT_HOST, MQTT_PORT = found
+        print('MQTT: broker descoberto em %s:%d' % found)
     try:
         if mqtt is None:
             client = MQTTPub(getattr(config, 'DEVICE_NAME', 'Vitrine-SIM'), MQTT_HOST,
-                             getattr(config, 'MQTT_PORT', 1883),
+                             MQTT_PORT,
                              getattr(config, 'MQTT_USER', None), getattr(config, 'MQTT_PASSWORD', None),
                              keepalive=max(30, MQTT_INTERVAL * 3))
             client.connect(will_topic=MQTT_TOPIC + '/status', will_msg='offline')
             client.publish(MQTT_TOPIC + '/status', 'online', retain=True)
             mqtt = client
+            mqtt_fails = 0
             print('MQTT ligado a %s, topico %s/state' % (MQTT_HOST, MQTT_TOPIC))
         data = sim.snapshot()
         data.pop('history', None)
         data.pop('events', None)
         data['location'] = LOCATION
+        data.update(health())
         mqtt.publish(MQTT_TOPIC + '/state', json.dumps(data), retain=True)
         mqtt_next = time.ticks_add(time.ticks_ms(), MQTT_INTERVAL * 1000)
     except Exception as e:
@@ -146,7 +238,14 @@ def mqtt_step():
         if mqtt:
             mqtt.close()
         mqtt = None
-        mqtt_next = time.ticks_add(time.ticks_ms(), 15000)
+        mqtt_fails += 1
+        found = discover_broker() if mqtt_fails >= 2 else None
+        if found and found[0] != MQTT_HOST:
+            print('MQTT: broker descoberto em %s:%d (era %s)' % (found[0], found[1], MQTT_HOST))
+            MQTT_HOST, MQTT_PORT = found
+            mqtt_next = time.ticks_ms()
+        else:
+            mqtt_next = time.ticks_add(time.ticks_ms(), 15000)
 
 
 def send(client, status, body, mime='application/json'):
@@ -195,10 +294,11 @@ def serve(client):
     elif method == 'GET' and path == '/api/state':
         data = sim.snapshot()
         data['location'] = LOCATION
-        data['mqtt'] = {'enabled': bool(MQTT_HOST), 'connected': mqtt is not None,
+        data['mqtt'] = {'enabled': True, 'connected': mqtt is not None,
                         'host': MQTT_HOST, 'topic': MQTT_TOPIC}
         data['wifi'] = {'ssid': active_net['ssid'], 'ip': wlan.ifconfig()[0]}
         data['ble'] = {'name': BLE_NAME, 'active_s': ble.remaining_s() if ble else 0}
+        data.update(health())
         send(client, '200 OK', json.dumps(data))
     elif method == 'POST' and path == '/api/action':
         headers = {}
@@ -226,6 +326,8 @@ def serve(client):
 
 bootsel_since = None
 while True:
+    if wdt:
+        wdt.feed()
     ble_step()
     # Botao BOOT premido 1 s -> abre a janela BLE
     if board.button():

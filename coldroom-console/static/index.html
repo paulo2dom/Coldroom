@@ -135,6 +135,10 @@ main{padding:18px 22px 40px;width:100%;max-width:1700px}
 .chip.on{color:var(--ice);border-color:var(--ice-dim)}
 .chip.warn{color:var(--warn);border-color:var(--warn-line)}
 .card svg.spark{display:block;width:100%;height:34px;margin-top:8px}
+.card .hw{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:11.5px;color:var(--ink2)}
+.card .hw .ic{width:13px;height:13px;color:var(--ice)}
+.card .hw .sep{color:var(--muted)}
+.ckv a{color:var(--ice);text-decoration:none}.ckv a:hover{text-decoration:underline}
 .card .foot{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:6px}
 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
 .badge.crit{background:var(--crit);color:#2a0705}
@@ -255,7 +259,7 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
     <a href="#" id="navHome"><svg class="ic"><use href="#i-home"/></svg>Visão central</a>
     <a href="#/alarmes" id="navAlarms"><svg class="ic"><use href="#i-bell"/></svg>Alarmes e eventos<span class="cnt" id="navAlarmCnt">0</span></a>
   </nav>
-  <h4><span>Câmaras frigoríficas</span><span class="num" id="camCnt"></span></h4>
+  <h4><span>Equipamentos de frio</span><span class="num" id="camCnt"></span></h4>
   <div class="sbsearch"><svg class="ic"><use href="#i-search"/></svg><input type="search" id="sbText" placeholder="Procurar…" aria-label="Procurar câmara"></div>
   <div class="cams" id="camList"></div>
   <div class="sbfoot"><svg class="ic sm"><use href="#i-clock"/></svg><span class="num" id="clock"></span></div>
@@ -265,7 +269,7 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
 <header>
   <button class="menu" id="menuBtn" aria-label="Menu"><svg class="ic"><use href="#i-menu"/></svg></button>
   <div class="htitle">
-    <h1>Sistema central de monitorização de <b>câmaras frigoríficas</b></h1>
+    <h1>Sistema central de monitorização de <b>equipamentos de frio</b></h1>
     <div class="sub"><svg class="ic sm"><use href="#i-store"/></svg><span id="fleet">—</span></div>
   </div>
   <div class="spacer"></div>
@@ -278,7 +282,7 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
   <!-- ============ VISÃO CENTRAL ============ -->
   <section id="overview">
     <div class="kpis">
-      <div class="kpi"><span class="ibox"><svg class="ic lg"><use href="#i-snow"/></svg></span><div><div class="lbl">Câmaras online</div><div class="val num" id="kOnline">–</div></div></div>
+      <div class="kpi"><span class="ibox"><svg class="ic lg"><use href="#i-snow"/></svg></span><div><div class="lbl">Equipamentos online</div><div class="val num" id="kOnline">–</div></div></div>
       <div class="kpi" id="kAlarmBox"><span class="ibox ok" id="kAlarmIc"><svg class="ic lg"><use href="#i-bell"/></svg></span><div><div class="lbl">Alarmes ativos</div><div class="val num" id="kAlarms">–</div></div></div>
       <div class="kpi"><span class="ibox"><svg class="ic lg"><use href="#i-drop"/></svg></span><div><div class="lbl">Em degelo</div><div class="val num" id="kDefrost">–</div></div></div>
       <div class="kpi"><span class="ibox"><svg class="ic lg"><use href="#i-door"/></svg></span><div><div class="lbl">Portas abertas</div><div class="val num" id="kDoors">–</div></div></div>
@@ -291,7 +295,7 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
           <select id="fZone" aria-label="Zona"></select>
           <select id="fStore" aria-label="Loja"></select>
           <select id="fPlace" aria-label="Local"></select>
-          <input type="search" id="fText" placeholder="Procurar câmara…" aria-label="Procurar">
+          <input type="search" id="fText" placeholder="Procurar equipamento…" aria-label="Procurar">
           <label><input type="checkbox" id="fAlarm"> Só com alarmes</label>
           <span class="count" id="fCount"></span>
         </div>
@@ -315,7 +319,14 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
   <!-- ============ DETALHE ============ -->
   <section id="detail" class="hidden">
     <div class="hero">
-      <svg class="hero-art" viewBox="0 0 150 104" aria-hidden="true">
+      <svg class="hero-art" id="heroVit" viewBox="0 0 150 104" aria-hidden="true" style="display:none">
+        <rect width="150" height="104" fill="url(#hg)"/>
+        <rect x="22" y="8" width="106" height="88" rx="5" fill="#0e2236" stroke="#3b6a8f" stroke-width="1.5"/><rect id="hvLight" x="27" y="12" width="96" height="3" rx="1.5" fill="#24486a"/>
+        <rect id="hvD0" x="27" y="18" width="30" height="64" rx="2" fill="#123350" stroke="#4fd1ff" stroke-width="1.2"/><rect id="hvD1" x="60" y="18" width="30" height="64" rx="2" fill="#123350" stroke="#4fd1ff" stroke-width="1.2"/><rect id="hvD2" x="93" y="18" width="30" height="64" rx="2" fill="#123350" stroke="#4fd1ff" stroke-width="1.2"/>
+        <path d="M30 36h24M30 52h24M30 68h24M63 36h24M63 52h24M63 68h24M96 36h24M96 52h24M96 68h24" stroke="#24486a" stroke-width="1.5"/><path d="M53 44v10M86 44v10M119 44v10" stroke="#4fd1ff" stroke-width="2" stroke-linecap="round"/>
+        <rect x="27" y="85" width="96" height="7" rx="1.5" fill="#0e2236" stroke="#24486a"/>
+      </svg>
+      <svg class="hero-art" id="heroCam" viewBox="0 0 150 104" aria-hidden="true">
         <defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#17395a"/><stop offset="1" stop-color="#0a1828"/></linearGradient></defs>
         <rect width="150" height="104" fill="url(#hg)"/>
         <rect x="30" y="10" width="34" height="11" rx="2" fill="#0e2236" stroke="#3b6a8f"/>
@@ -329,7 +340,7 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
       </svg>
       <div style="min-width:0">
         <h2 id="dName">—</h2>
-        <div class="tag">Simulação dinâmica de uma única câmara · Pico W</div>
+        <div class="tag" id="dTag">—</div>
         <div class="ln" id="dCrumbs"></div>
         <div class="ln"><svg class="ic"><use href="#i-topic"/></svg><span class="muted">Tópico MQTT:</span><code id="dTopic"></code></div>
       </div>
@@ -347,16 +358,16 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
         <div><div class="t">Alarmes ativos</div><div class="n num" id="dAlarmCount">0</div></div>
         <div class="lst" id="dAlarmList"></div>
       </div>
-      <div class="tile stat"><span class="ibox" id="dPhaseIc"><svg class="ic lg"><use href="#i-pulse"/></svg></span><div><div class="t">Monitor de fases</div><div id="dPhase"></div></div></div>
-      <div class="tile stat"><span class="ibox" id="dOilIc"><svg class="ic lg"><use href="#i-drop"/></svg></span><div><div class="t">Óleo do compressor</div><div id="dOil"></div></div></div>
-      <div class="tile stat"><span class="ibox" id="dRefrIc"><svg class="ic lg"><use href="#i-tank"/></svg></span><div><div class="t">Refrigerante</div><div id="dRefr"></div></div></div>
+      <div class="tile stat"><span class="ibox" id="dPhaseIc"><svg class="ic lg"><use href="#i-pulse"/></svg></span><div><div class="t" id="dPhaseT">Monitor de fases</div><div id="dPhase"></div></div></div>
+      <div class="tile stat"><span class="ibox" id="dOilIc"><svg class="ic lg"><use id="dOilUse" href="#i-drop"/></svg></span><div><div class="t" id="dOilT">Óleo do compressor</div><div id="dOil"></div></div></div>
+      <div class="tile stat"><span class="ibox" id="dRefrIc"><svg class="ic lg"><use href="#i-tank"/></svg></span><div><div class="t" id="dRefrT">Refrigerante</div><div id="dRefr"></div></div></div>
     </div>
 
     <div class="row r-temps">
-      <div class="tile temp-t main" id="dRoomTile"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-thermo"/></svg><div><div class="lbl" style="color:var(--ink)">Temperatura da câmara</div><div class="big num" id="dRoom">–</div><div class="sub num" id="dSp">Setpoint –</div></div></div>
+      <div class="tile temp-t main" id="dRoomTile"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-thermo"/></svg><div><div class="lbl" style="color:var(--ink)" id="dRoomL">Temperatura da câmara</div><div class="big num" id="dRoom">–</div><div class="sub num" id="dSp">Setpoint –</div></div></div>
       <div class="tile temp-t"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-wind"/></svg><div><div class="lbl">Ar insuflado</div><div class="big num" id="dSupply">–</div><div class="sub">Saída do evaporador</div></div></div>
-      <div class="tile temp-t"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-ret"/></svg><div><div class="lbl">Ar de retorno</div><div class="big num" id="dReturn">–</div><div class="sub">Entrada no evaporador</div></div></div>
-      <div class="tile temp-t"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-snow"/></svg><div><div class="lbl">Evaporador / degelo</div><div class="big num" id="dEvap">–</div><div class="sub">Temperatura simulada da serpentina</div></div></div>
+      <div class="tile temp-t"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use id="dReturnUse" href="#i-ret"/></svg><div><div class="lbl" id="dReturnL">Ar de retorno</div><div class="big num" id="dReturn">–</div><div class="sub num" id="dReturnS">Entrada no evaporador</div></div></div>
+      <div class="tile temp-t"><svg class="ic lg" style="color:var(--ice);margin-top:2px"><use href="#i-snow"/></svg><div><div class="lbl">Evaporador / degelo</div><div class="big num" id="dEvap">–</div><div class="sub" id="dEvapS">Temperatura simulada da serpentina</div></div></div>
     </div>
 
     <div class="row r-mid">
@@ -364,9 +375,9 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
         <div class="chead">
           <h3 class="ptitle"><svg class="ic"><use href="#i-trend"/></svg>Tendência térmica</h3>
           <div class="legend">
-            <span><i style="background:var(--ice)"></i>Câmara</span>
+            <span><i style="background:var(--ice)"></i><span id="lgRoom">Câmara</span></span>
             <span><i style="background:var(--supply)"></i>Insuflação</span>
-            <span><i style="background:var(--return)"></i>Retorno</span>
+            <span><i style="background:var(--return)"></i><span id="lgRet">Retorno</span></span>
             <span><i class="dash"></i>Setpoint</span>
           </div>
           <div class="ranges" id="ranges"><button data-r="900">15 min</button><button data-r="3600" class="sel">1 h</button><button data-r="0">Tudo</button></div>
@@ -376,12 +387,19 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
       </div>
       <div class="tile">
         <h3 class="ptitle" style="margin-bottom:4px"><svg class="ic"><use href="#i-gear"/></svg>Componentes e ciclo de refrigeração</h3>
-        <div class="kv"><svg class="ic"><use href="#i-comp"/></svg><span class="k">Compressor</span><span id="dComp"></span><span class="x num" id="dCompLoad"></span></div>
+        <div class="kv"><svg class="ic"><use href="#i-comp"/></svg><span class="k" id="dCompK">Compressor</span><span id="dComp"></span><span class="x num" id="dCompLoad"></span></div>
         <div class="kv"><svg class="ic"><use href="#i-fan"/></svg><span class="k">Ventiladores</span><span id="dFans"></span><span class="x"></span></div>
-        <div class="kv"><svg class="ic"><use href="#i-valve"/></svg><span class="k">Válvula eletrónica EEV</span><span class="s idle"><span class="bar"><span id="dEevBar" style="width:0"></span></span>Abertura</span><span class="x num" id="dEev"></span></div>
-        <div class="kv"><svg class="ic"><use href="#i-snow"/></svg><span class="k">Ciclo de degelo</span><span id="dDefrost"></span><span class="x"></span></div>
-        <div class="kv"><svg class="ic"><use href="#i-door"/></svg><span class="k">Porta da câmara</span><span id="dDoor"></span><span class="x"></span></div>
-        <div class="kv"><svg class="ic"><use href="#i-shield"/></svg><span class="k">Proteção do compressor</span><span id="dProt"></span><span class="x"></span></div>
+        <div class="kv" id="dEevRow"><svg class="ic"><use href="#i-valve"/></svg><span class="k">Válvula eletrónica EEV</span><span class="s idle"><span class="bar"><span id="dEevBar" style="width:0"></span></span>Abertura</span><span class="x num" id="dEev"></span></div>
+        <div class="kv"><svg class="ic"><use href="#i-snow"/></svg><span class="k" id="dDefK">Ciclo de degelo</span><span id="dDefrost"></span><span class="x num" id="dDefX"></span></div>
+        <div class="kv"><svg class="ic"><use href="#i-door"/></svg><span class="k" id="dDoorK">Porta da câmara</span><span id="dDoor"></span><span class="x num" id="dDoorX"></span></div>
+        <div class="kv"><svg class="ic"><use href="#i-shield"/></svg><span class="k" id="dProtK">Proteção do compressor</span><span id="dProt"></span><span class="x"></span></div>
+      </div>
+    </div>
+
+    <div class="row hidden" id="dVitRow">
+      <div class="tile">
+        <h3 class="ptitle"><svg class="ic"><use href="#i-vit"/></svg>Vitrine: loja, portas, vidros e HACCP</h3>
+        <div class="metrics" id="dVit"></div>
       </div>
     </div>
 
@@ -394,10 +412,15 @@ details.raw pre{font-family:var(--mono);font-size:12px;background:var(--bg);bord
     </div>
 
     <div class="row r-2">
-      <div class="tile"><h3 class="ptitle"><svg class="ic"><use href="#i-list"/></svg>Eventos desta câmara</h3><ul class="elist" id="dEvents"></ul></div>
+      <div class="tile"><h3 class="ptitle"><svg class="ic"><use href="#i-list"/></svg>Eventos deste equipamento</h3><ul class="elist" id="dEvents"></ul></div>
       <div class="tile">
-        <h3 class="ptitle" style="margin-bottom:2px"><svg class="ic"><use href="#i-radio"/></svg>Comunicação</h3>
-        <div class="ckv" style="border-top:0"><span class="k">Última mensagem</span><span class="num" id="dLast"></span></div>
+        <h3 class="ptitle" style="margin-bottom:2px"><svg class="ic"><use href="#i-radio"/></svg>Comunicação e hardware</h3>
+        <div class="ckv" style="border-top:0"><span class="k">Hardware</span><span id="dHw"></span></div>
+        <div class="ckv"><span class="k">Temperatura do chip</span><span class="num" id="dChip"></span></div>
+        <div class="ckv"><span class="k">Endereço IP</span><span class="num" id="dIp"></span></div>
+        <div class="ckv"><span class="k">Rede Wi-Fi</span><span class="num" id="dWifi"></span></div>
+        <div class="ckv"><span class="k">Ligado há</span><span class="num" id="dUp"></span></div>
+        <div class="ckv"><span class="k">Última mensagem</span><span class="num" id="dLast"></span></div>
         <div class="ckv"><span class="k">Mensagens recebidas</span><span class="num" id="dCount"></span></div>
         <div class="ckv"><span class="k">Primeira vez visto</span><span class="num" id="dFirst"></span></div>
         <details class="raw"><summary>Payload JSON recebido</summary><pre id="dRaw"></pre></details>
@@ -444,6 +467,11 @@ const ICONS = {
   gear:"M12 9a3 3 0 100 6 3 3 0 000-6zM12 2v3M12 19v3M2 12h3M19 12h3M4.900 4.900l2.100 2.100M17 17l2.100 2.100M19.100 4.900L17 7M7 17l-2.100 2.100",
   plug:"M9 3v5M15 3v5M6 8h12v3a6 6 0 01-12 0V8zM12 17v4",
   timer:"M12 7a7 7 0 100 14 7 7 0 000-14zM12 11v3.500M9.500 3h5M12 3v4",
+  vit:"M4 3h16v18H4zM9.300 6v12M14.700 6v12M4 6h16M4 18h16M7.600 11v2M13 11v2M18.400 11v2",
+  bulb:"M9 18h6M10 21h4M12 3a6 6 0 00-3.500 10.900c.6.5 1 1.200 1 2.100h5c0-.9.4-1.600 1-2.100A6 6 0 0012 3z",
+  clip:"M9 4h6v3H9zM7 5.500H5v15h14v-15h-2M8.500 13l2.500 2.500 4.500-5",
+  fog:"M7 10a5 5 0 0110 0M4 14h16M6 18h12M8 22h8",
+  users:"M9 11a3.500 3.500 0 100-7 3.500 3.500 0 000 7zM2.500 20a6.500 6.500 0 0113 0M16 4.300a3.500 3.500 0 010 6.400M18 14.500a6.500 6.500 0 013.500 5.500",
 };
 document.getElementById("sprite").innerHTML = Object.entries(ICONS).map(([n,d]) => `<symbol id="i-${n}" viewBox="0 0 24 24"><path d="${d}"/></symbol>`).join("");
 const I = (n, cls="") => `<svg class="ic ${cls}"><use href="#i-${n}"/></svg>`;
@@ -587,15 +615,22 @@ function card(d){
   if (x.mode) chips.push(`<span class="chip">${esc(x.mode)}</span>`);
   if (x.comp_on != null) chips.push(`<span class="chip ${x.comp_on?"on":""}">${I("comp","sm")}${x.comp_on ? (x.comp_load!=null? f(x.comp_load,0)+"%" : "ligado") : "parado"}</span>`);
   if (x.defrost) chips.push(`<span class="chip on">${I("drop","sm")}Degelo</span>`);
-  if (x.door_open) chips.push(`<span class="chip warn">${I("door","sm")}Porta aberta</span>`);
-  ["phase_monitor","comp_oil","refrigerant"].forEach((k,i) => { if (!isNormal(x[k])) chips.push(`<span class="chip warn">${["Fases","Óleo","Refrig."][i]}: ${esc(x[k])}</span>`); });
+  const v = x.vitrine;
+  if (v){
+    if (v.product != null) chips.push(`<span class="chip ${v.product > (v.haccp_limit ?? 5) ? "warn" : ""}">${I("clip","sm")}Produto ${f(v.product)} °C</span>`);
+    const open = (v.doors||[]).map((o,i) => o ? "P"+(i+1) : null).filter(Boolean);
+    if (open.length) chips.push(`<span class="chip warn">${I("door","sm")}${open.join(" ")}</span>`);
+    if (v.store_open != null) chips.push(`<span class="chip ${v.store_open ? "on" : ""}">${I("store","sm")}${v.store_open ? "Loja aberta" : "Loja fechada"}${v.clock ? " · " + esc(v.clock) : ""}</span>`);
+  } else if (x.door_open) chips.push(`<span class="chip warn">${I("door","sm")}Porta aberta</span>`);
+  ["phase_monitor","comp_oil","refrigerant"].forEach((k,i) => { if (!isNormal(x[k])) chips.push(`<span class="chip warn">${[v ? "Energia" : "Fases","Óleo","Refrig."][i]}: ${esc(x[k])}</span>`); });
   return `<button class="card st-${s}" data-key="${esc(d.key)}">
-    <div class="top"><span class="ibox ${s === "ok" ? "" : s}">${I("snow")}</span><div><div class="id">${esc(d.device_label)}</div><div class="place">${esc(d.loc.place)}</div></div>${badge}</div>
+    <div class="top"><span class="ibox ${s === "ok" ? "" : s}">${I(v ? "vit" : "snow")}</span><div><div class="id">${esc(d.device_label)}</div><div class="place">${esc(d.loc.place)}</div></div>${badge}</div>
     <div class="temp num">${f(x.t_room)}<small> °C</small></div>
     <div class="sp num">Setpoint ${f(x.t_setpoint)} °C</div>
     <div class="chips">${chips.join("")}</div>
+    ${(x.mcu_temp != null || x.ip) ? `<div class="hw num">${x.mcu_temp != null ? `${I("thermo","sm")}Chip ${f(x.mcu_temp,0)} °C` : ""}${x.mcu_temp != null && x.ip ? `<span class="sep">·</span>` : ""}${x.ip ? esc(x.ip) : ""}</div>` : ""}
     ${spark(d.spark, x.t_setpoint)}
-    <div class="foot"><span>${esc(d.name)}</span><span class="num">${ago(d.last_seen)}</span></div>
+    <div class="foot"><span>${esc(d.name)}${x.hardware ? " · " + esc(x.hardware) : ""}</span><span class="num">${ago(d.last_seen)}</span></div>
   </button>`;
 }
 function evRow(e){
@@ -616,7 +651,9 @@ function render(){
 
   // topo + barra lateral
   const stores = new Set(all.map(d => `${d.slug.country}/${d.slug.zone}/${d.slug.store}`)).size;
-  $("fleet").textContent = all.length ? `${all.length} câmara${all.length>1?"s":""} em ${stores} loja${stores>1?"s":""}` : "À espera de dados…";
+  const nVit = all.filter(d => d.data && d.data.vitrine).length, nCam = all.length - nVit;
+  const parts = [nCam ? `${nCam} câmara${nCam>1?"s":""}` : "", nVit ? `${nVit} vitrine${nVit>1?"s":""}` : ""].filter(Boolean).join(" e ");
+  $("fleet").textContent = all.length ? `${parts} em ${stores} loja${stores>1?"s":""}` : "À espera de dados…";
   const nc = $("navAlarmCnt"); nc.textContent = alarms.length; nc.classList.toggle("on", alarms.length > 0);
   $("navHome").classList.toggle("sel", S.view === "overview");
   $("navAlarms").classList.toggle("sel", S.view === "alarms");
@@ -624,10 +661,10 @@ function render(){
   const list = all.filter(d => !S.sbText || hay(d).includes(S.sbText))
     .sort((a,b) => (RANK[sev(a)] - RANK[sev(b)]) || a.loc.store.localeCompare(b.loc.store, "pt") || a.loc.place.localeCompare(b.loc.place, "pt") || a.device_label.localeCompare(b.device_label));
   $("camList").innerHTML = list.map(d => { const s = sev(d);
-    return `<a class="cam st-${s}${d.key === S.detailKey ? " sel" : ""}" href="${href(d.key)}"><span class="ci">${I("snow")}</span>
+    return `<a class="cam st-${s}${d.key === S.detailKey ? " sel" : ""}" href="${href(d.key)}"><span class="ci">${I(d.data && d.data.vitrine ? "vit" : "snow")}</span>
       <span style="min-width:0"><b>${esc(d.device_label)}</b><small>${esc(d.loc.store)} · ${esc(d.loc.place)}</small></span>
       <span class="tv num"><span class="dot ${s === "off" ? "" : s}"></span>${f(d.data?.t_room)} °C</span></a>`; }).join("")
-    || `<div class="muted" style="padding:8px 10px;font-size:12px">Sem câmaras.</div>`;
+    || `<div class="muted" style="padding:8px 10px;font-size:12px">Sem equipamentos.</div>`;
 
   if (S.view === "overview"){
     const online = all.filter(d => d.comm === "online");
@@ -640,7 +677,7 @@ function render(){
     $("kPower").innerHTML = `${f(online.reduce((s,d) => s + (d.data?.power_kw || 0), 0),2)}<small> kW</small>`;
 
     const vis = all.filter(visible);
-    $("fCount").textContent = `${vis.length} de ${all.length} câmaras`;
+    $("fCount").textContent = `${vis.length} de ${all.length} equipamentos`;
     const groups = new Map();
     vis.forEach(d => { const g = `${d.slug.country}/${d.slug.zone}/${d.slug.store}`; if (!groups.has(g)) groups.set(g, {loc:d.loc, items:[]}); groups.get(g).items.push(d); });
     const grank = g => Math.min(...g.items.map(d => RANK[sev(d)]));
@@ -648,7 +685,7 @@ function render(){
     $("groups").innerHTML = gs.length ? gs.map(g => {
       g.items.sort((a,b) => (RANK[sev(a)] - RANK[sev(b)]) || a.loc.place.localeCompare(b.loc.place, "pt") || a.device_label.localeCompare(b.device_label));
       return `<div class="group"><h3>${I("store")}${esc(g.loc.store)} <span class="path">${esc(g.loc.country)} › ${esc(g.loc.zone)}</span></h3><div class="grid">${g.items.map(card).join("")}</div></div>`;
-    }).join("") : `<div class="empty">${all.length ? "Nenhuma câmara corresponde aos filtros." : "À espera de dados das câmaras…<br><small>Tópicos subscritos: pais/zona/loja/local/equipamento/state</small>"}</div>`;
+    }).join("") : `<div class="empty">${all.length ? "Nenhum equipamento corresponde aos filtros." : "À espera de dados dos equipamentos…<br><small>Tópicos subscritos: pais/zona/loja/local/equipamento/state</small>"}</div>`;
     const ac = $("sideAlarmCount"); ac.textContent = alarms.length; ac.className = "badge " + (alarms.length ? "crit" : "ok");
     $("alarmList").innerHTML = alarmRows(alarms);
     $("eventList").innerHTML = S.events.length ? S.events.slice(0, 12).map(evRow).join("") : `<li class="s">Sem eventos.</li>`;
@@ -702,7 +739,7 @@ const st = (cls, txt) => `<span class="s ${cls}"><span class="dot ${cls === "on"
 
 function renderDetail(){
   const d = S.detail || S.devices.get(S.detailKey);
-  if (!d){ $("dName").textContent = "Câmara desconhecida"; return; }
+  if (!d){ $("dName").textContent = "Equipamento desconhecido"; return; }
   const x = d.data || {}, s = sev(d);
   document.title = `ColdRoom | ${d.device_label} · ${d.loc.store}`;
   $("dName").textContent = d.name;
@@ -721,31 +758,94 @@ function renderDetail(){
   $("dAlarmIc").className = "ibox " + (al.length ? "crit" : "ok");
   $("dAlarmCount").textContent = al.length;
   $("dAlarmList").innerHTML = al.length ? al.map(a => `<div><span class="dot ${a.severity === "critical" ? "crit" : "warn"}"></span><span>${esc(a.text)} <span class="muted">(${esc(a.code)})</span></span></div>`).join("") : "Sem alarmes ativos";
-  statV("dPhase", x.phase_monitor); statV("dOil", x.comp_oil); statV("dRefr", x.refrigerant);
+  const V = x.vitrine, isV = !!V;
+  $("heroVit").style.display = isV ? "" : "none"; $("heroCam").style.display = isV ? "none" : "";
+  $("dTag").textContent = isV ? `${x.model || "Vitrine expositora"} · ${x.hardware || "?"}`
+    : `Simulação dinâmica de uma única câmara · ${x.hardware || "?"}`;
+  $("dPhaseT").textContent = isV ? "Alimentação 230 V" : "Monitor de fases";
+  $("dOilT").textContent = isV ? "Iluminação LED" : "Óleo do compressor";
+  $("dOilUse").setAttribute("href", isV ? "#i-bulb" : "#i-drop");
+  $("dRefrT").textContent = isV ? "Carga de R290" : "Refrigerante";
+  if (isV && x.phase_monitor != null){
+    const pok = isNormal(x.phase_monitor);
+    $("dPhase").innerHTML = `<div class="v ${pok ? "ok" : "bad"}">${I(pok ? "check" : "warn")}${pok ? (x.voltage != null ? f(x.voltage,0) + " V" : "Normal") : "SEM ENERGIA"}</div>`;
+    $("dPhaseIc").className = "ibox " + (pok ? "" : "warn");
+  } else statV("dPhase", x.phase_monitor);
+  if (isV){
+    const lv = V.lights_fault ? "AVARIA" : V.lights == null ? null : V.lights ? "Ligada" : "Desligada (noite)";
+    $("dOil").innerHTML = lv == null ? `<div class="v na">–</div>` : `<div class="v ${V.lights_fault ? "bad" : V.lights ? "ok" : "na"}">${I(V.lights_fault ? "warn" : "bulb")}${lv}</div>`;
+    $("dOilIc").className = "ibox " + (V.lights_fault ? "warn" : V.lights ? "" : "off");
+  } else statV("dOil", x.comp_oil);
+  statV("dRefr", x.refrigerant);
 
   $("dRoomTile").className = "tile temp-t main " + (s === "crit" ? "crit" : s === "warn" ? "warn" : "");
   $("dRoom").textContent = `${f(x.t_room)} °C`;
   $("dSp").textContent = `Setpoint ${f(x.t_setpoint)} °C`;
   $("dSupply").textContent = `${f(x.t_supply)} °C`;
-  $("dReturn").textContent = `${f(x.t_return)} °C`;
+  $("dRoomL").textContent = isV ? "Ar da vitrine" : "Temperatura da câmara";
+  if (isV){
+    $("dReturnL").textContent = "Produto (sonda HACCP)"; $("dReturnUse").setAttribute("href", "#i-clip");
+    $("dReturn").textContent = `${f(V.product)} °C`;
+    $("dReturnS").textContent = `mín ${f(V.haccp_min)} · máx ${f(V.haccp_max)} · >${f(V.haccp_limit,0)} °C: ${f(V.haccp_minutes_above,0)} min`;
+    $("dEvapS").textContent = x.defrost ? "Degelo por paragem em curso" : (V.defrost_in_min != null ? `Próximo degelo em ${Math.floor(V.defrost_in_min/60)}h${String(V.defrost_in_min%60).padStart(2,"0")}` : "");
+  } else {
+    $("dReturnL").textContent = "Ar de retorno"; $("dReturnUse").setAttribute("href", "#i-ret");
+    $("dReturn").textContent = `${f(x.t_return)} °C`; $("dReturnS").textContent = "Entrada no evaporador";
+    $("dEvapS").textContent = "Temperatura simulada da serpentina";
+  }
+  $("lgRet").textContent = isV ? "Produto" : "Retorno";
+  $("lgRoom").textContent = isV ? "Ar da vitrine" : "Câmara";
   $("dEvap").textContent = `${f(x.t_evap)} °C`;
 
   $("dComp").innerHTML = x.comp_on == null ? st("idle","–") : x.comp_on ? st("on","A trabalhar") : st("idle","Parado");
-  $("dCompLoad").textContent = `${f(x.comp_load ?? 0,0)}%`;
+  $("dCompK").textContent = isV ? "Compressor (velocidade fixa)" : "Compressor";
+  $("dCompLoad").textContent = isV ? `${f(V.duty_pct,0)}% / 1 h` : `${f(x.comp_load ?? 0,0)}%`;
+  $("dEevRow").classList.toggle("hidden", isV);
+  $("dDefK").textContent = isV ? "Degelo por paragem" : "Ciclo de degelo";
+  $("dDefX").textContent = "";
+  $("dProtK").textContent = isV ? "Pressostato de alta" : "Proteção do compressor";
   $("dFans").innerHTML = x.fans_on == null ? st("idle","–") : x.fans_on ? st("on","Ligados") : st("idle","Desligados");
   $("dEev").textContent = `${f(x.eev_open ?? 0,0)}%`;
   $("dEevBar").style.width = Math.max(0, Math.min(100, x.eev_open || 0)) + "%";
   $("dDefrost").innerHTML = x.defrost == null ? st("idle","–") : x.defrost ? st("bad","Ativo") : st("idle","Inativo");
-  $("dDoor").innerHTML = x.door_open == null ? st("idle","–") : x.door_open ? st("bad","Aberta") : st("on","Fechada");
+  $("dDoorK").textContent = isV ? "Portas de vidro" : "Porta da câmara";
+  if (isV){
+    const ds = V.doors || [];
+    $("dDoor").innerHTML = ds.length ? ds.map((o,i) => `<span class="chip ${o ? "warn" : ""}" style="margin-right:4px">P${i+1}</span>`).join("") : st("idle","–");
+    $("dDoorX").textContent = V.door_openings != null ? `${f(V.door_openings,0)}×` : "";
+    ds.forEach((o,i) => { const r = $("hvD"+i); if (r){ r.setAttribute("fill", o ? "#3a2a08" : "#123350"); r.setAttribute("stroke", o ? "#ffb020" : "#4fd1ff"); } });
+    $("hvLight").setAttribute("fill", V.lights ? "#ffe28a" : "#24486a");
+  } else {
+    $("dDoor").innerHTML = x.door_open == null ? st("idle","–") : x.door_open ? st("bad","Aberta") : st("on","Fechada");
+    $("dDoorX").textContent = "";
+  }
   $("dProt").innerHTML = x.comp_protection == null ? st("idle","–") : isNormal(x.comp_protection) ? st("on", esc(x.comp_protection)) : st("bad", esc(x.comp_protection));
 
   const M = [["gauge","Pressão de aspiração", x.p_suction, 2, "bar"], ["gauge","Pressão de descarga", x.p_discharge, 2, "bar"],
     ["heat","Superaquecimento*", x.superheat, 2, "K"], ["snow","Subarrefecimento*", x.subcooling, 2, "K"],
-    ["bolt","Tensão trifásica", x.voltage, 1, "V"], ["plug","Corrente elétrica", x.current, 2, "A"],
+    ["bolt", isV ? "Tensão monofásica" : "Tensão trifásica", x.voltage, 1, "V"], ["plug","Corrente elétrica", x.current, 2, "A"],
     ["pulse","Potência instantânea", x.power_kw, 2, "kW"], ["bars","Energia acumulada", x.energy_kwh, 2, "kWh"],
     ["timer","Horas do compressor", x.comp_hours, 1, "h"], ["fan","Horas dos ventiladores", x.fans_hours, 1, "h"]];
+  $("dVitRow").classList.toggle("hidden", !isV);
+  if (isV){
+    const tr = ["Nenhum","Baixo","Médio","Alto"][V.traffic] || "–";
+    const sch = {auto:"horário automático", open:"forçada aberta", closed:"forçada fechada"}[V.schedule] || "";
+    const VM = [["clock","Hora da loja", V.clock || "–", ""], ["store","Loja", V.store_open == null ? "–" : V.store_open ? "Aberta" : "Fechada", sch],
+      ["users","Clientes", tr, ""], ["door","Aberturas de porta", f(V.door_openings,0), ""], ["bulb","Iluminação LED", V.lights_fault ? "AVARIA" : V.lights ? "Ligada" : "Desligada", ""],
+      ["heat","Anti-embaciamento", f(V.antifog_pct,0), "%"], ["fog","Vidros embaciados", f(V.fog_pct,0), "%"], ["drop","Humidade da loja", f(V.humidity,0), "%"],
+      ["thermo","Temperatura da loja", f(V.ambient,0), "°C"], ["heat","Temp. de condensação", f(V.condenser), "°C"],
+      ["clip","Produto agora", f(V.product), "°C"], ["clip","HACCP mín / máx", `${f(V.haccp_min)} / ${f(V.haccp_max)}`, "°C"], ["timer","Minutos acima de " + f(V.haccp_limit,0) + " °C", f(V.haccp_minutes_above,0), "min"],
+      ["comp","Funcionamento (1 h)", f(V.duty_pct,0), "%"], ["comp","Arranques do compressor", f(V.compressor_starts,0), ""]];
+    $("dVit").innerHTML = VM.map(([ic,k,v,u]) => `<div class="metric"><div class="h">${I(ic)}<span>${k}</span></div><div class="v num">${esc(v)}<small>${esc(u)}</small></div></div>`).join("");
+  }
   $("dMetrics").innerHTML = M.map(([ic,k,v,dg,u]) => `<div class="metric"><div class="h">${I(ic)}<span>${k}</span></div><div class="v num">${f(v,dg)}<small>${u}</small></div></div>`).join("");
 
+  $("dHw").textContent = x.hardware || "–";
+  $("dChip").textContent = x.mcu_temp != null ? `${f(x.mcu_temp,1)} °C${x.hardware === "Raspberry Pi" ? " (CPU do Pi)" : ""}` : "–";
+  $("dIp").innerHTML = !x.ip ? "–" : x.hardware === "Raspberry Pi" ? esc(x.ip) : `<a href="http://${esc(x.ip)}/" target="_blank" rel="noopener">${esc(x.ip)} ↗</a>`;
+  $("dWifi").textContent = x.ssid || x.rssi != null ? `${x.ssid || "–"}${x.rssi != null ? ` · ${f(x.rssi,0)} dBm` : ""}` : "–";
+  const up = x.dev_uptime_s;
+  $("dUp").textContent = up == null ? "–" : `${Math.floor(up/3600)}h ${String(Math.floor(up%3600/60)).padStart(2,"0")}m${x.reset_cause ? ` · arranque: ${x.reset_cause === "wdt" ? "watchdog (bloqueio)" : x.reset_cause}` : ""}`;
   $("dLast").textContent = d.last_seen ? `${dt(d.last_seen)} (${ago(d.last_seen)})` : "nunca";
   $("dCount").textContent = d.msg_count ?? "–";
   $("dFirst").textContent = dt(d.first_seen);
@@ -758,7 +858,9 @@ function renderDetail(){
 }
 
 /* ================= gráfico ================= */
-const SERIES = [[1, "#4fd1ff", 2.2], [2, "#7ee0a3", 1.6], [3, "#ffb454", 1.6]];
+const SERIES_CAM = [[1, "#4fd1ff", 2.2], [2, "#7ee0a3", 1.6], [3, "#ffb454", 1.6]];
+const SERIES_VIT = [[1, "#4fd1ff", 2.2], [2, "#7ee0a3", 1.6], [6, "#ffb454", 1.8]];
+let SERIES = SERIES_CAM;
 function chartData(){
   const h = (S.detail && S.detail.history) || [];
   if (!S.range) return h;
@@ -774,10 +876,12 @@ function drawChart(){
   const W = box.width, H = box.height, L = 50, R = 12, T = 10, B = 24;
   c.clearRect(0,0,W,H);
   const pts = chartData();
+  const isV = !!(S.detail && S.detail.data && S.detail.data.vitrine);
+  SERIES = isV ? SERIES_VIT : SERIES_CAM;
   c.font = "11px system-ui, sans-serif"; c.fillStyle = "#7d95ab";
   if (pts.length < 2){ c.fillText("A recolher histórico… (1 ponto a cada " + (S.console.history_interval||10) + " s)", L, H/2); $("readout").textContent = ""; return; }
   let lo = Infinity, hi = -Infinity;
-  pts.forEach(p => [1,2,3,4].forEach(i => { if (p[i] != null){ lo = Math.min(lo, p[i]); hi = Math.max(hi, p[i]); } }));
+  pts.forEach(p => [1,2,isV ? 6 : 3,4].forEach(i => { if (p[i] != null){ lo = Math.min(lo, p[i]); hi = Math.max(hi, p[i]); } }));
   if (hi - lo < 2){ const m = (hi+lo)/2; lo = m-1; hi = m+1; }
   const pad = (hi-lo)*.1; lo -= pad; hi += pad;
   const t0 = pts[0][0], t1 = pts[pts.length-1][0];
@@ -805,7 +909,9 @@ function drawChart(){
     const x = Math.round(X(best[0])) + .5;
     c.strokeStyle = "#3a5f80"; c.lineWidth = 1; c.beginPath(); c.moveTo(x, T); c.lineTo(x, H-B); c.stroke();
     SERIES.forEach(([i, col]) => { if (best[i] != null){ c.fillStyle = col; c.beginPath(); c.arc(x, Y(best[i]), 3.5, 0, 7); c.fill(); } });
-    $("readout").textContent = `${hhmm(best[0])} · Câmara ${f(best[1])} °C · Insuflação ${f(best[2])} °C · Retorno ${f(best[3])} °C · Setpoint ${f(best[4])} °C · Evaporador ${f(best[5])} °C`;
+    $("readout").textContent = isV
+      ? `${hhmm(best[0])} · Ar ${f(best[1])} °C · Insuflação ${f(best[2])} °C · Produto ${f(best[6])} °C · Setpoint ${f(best[4])} °C · Evaporador ${f(best[5])} °C`
+      : `${hhmm(best[0])} · Câmara ${f(best[1])} °C · Insuflação ${f(best[2])} °C · Retorno ${f(best[3])} °C · Setpoint ${f(best[4])} °C · Evaporador ${f(best[5])} °C`;
   } else $("readout").textContent = `${pts.length} pontos · ${hhmm(t0)} – ${hhmm(t1)}`;
 }
 function line(c, pts, i, X, Y){

@@ -169,7 +169,11 @@ Para cada avaria: ativar → observar → tentar rearmar → remover → rearmar
   **Esperado:** alarme **REFRIGERANTE BAIXO** mas **sem** bloqueio; capacidade máxima limitada a **45 %**; aspiração ≈ 0,7 bar mais baixa (mínimo 0,2 bar); superaquecimento +4 K; subarrefecimento −3,5 K; o compressor trabalha mais tempo para chegar ao setpoint.
 
 - [ ] **T6.8 — Refrigerante baixo + ambiente 40 °C + porta aberta**
-  **Esperado:** o sistema **não consegue** manter a temperatura: câmara ≈ 8 °C aos 10 min, ≈ 15 °C aos 30 min, ≈ 22 °C aos 60 min simulados; compressor fixo em 45 %.
+  **Esperado:** o sistema **não consegue** manter a temperatura: câmara ≈ 8 °C aos 10 min, ≈ 15 °C aos 30 min, ≈ 22 °C aos 60 min simulados; compressor fixo em 45 %. Com a câmara acima de setpoint + 4 °C durante 10 min simulados aparece **TEMPERATURA ALTA**.
+
+- [ ] **T6.8b — Temperatura alta por paragem do compressor**
+  Ativar a falha de fase e deixar correr (20× acelera).
+  **Esperado:** ao fim de cerca de 70 min simulados aparece **TEMPERATURA ALTA**, no Pico e na consola central. Remover a avaria e rearmar → a câmara arrefece e o alarme desaparece quando volta abaixo de setpoint + 4 °C.
 
 - [ ] **T6.9 — Várias avarias ao mesmo tempo**
   Ativar fase + óleo. Remover só uma e tentar rearmar.
