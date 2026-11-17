@@ -1,4 +1,4 @@
-"""Redes Wi-Fi conhecidas do simulador (Pico W ou ESP32-S3).
+"""Redes Wi-Fi conhecidas do Pico W.
 
 Origem das redes:
   - config.py: WIFI_NETWORKS (predefinidas, editadas no PC)

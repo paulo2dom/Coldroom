@@ -13,7 +13,6 @@ Exemplos:
 
 O BLE so esta ativo em janelas curtas:
   Pico: 3 min apos arrancar, sem Wi-Fi conhecido, ou BOOTSEL premido 1 s (LED aceso)
-  ESP32-S3: igual ao Pico, com o botao BOOT (LED azul); usar --name ColdRoom-CF-07
   Pi:  10 min apos arrancar e sempre que nao tem Wi-Fi
 
 AVISO (laboratorio): a ligacao BLE nao e cifrada; a password Wi-Fi passa em claro.
@@ -57,7 +56,7 @@ async def find(target, name, seconds):
     print("A procurar %s durante %d s..." % (label, seconds))
     d = await BleakScanner.find_device_by_filter(match, timeout=seconds)
     if not d:
-        hint = ("BOOTSEL (Pico) ou BOOT (ESP32) premido 1 s (LED acende) ou reinicia-o" if target == "pico"
+        hint = ("BOOTSEL premido 1 s no Pico (LED acende) ou reinicia-o" if target == "pico"
                 else "reinicia o Pi ou o servico: sudo systemctl restart coldroom-ble")
         raise RuntimeError("Nao encontrado. Janela BLE fechada? %s." % hint)
     return d

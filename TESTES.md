@@ -292,10 +292,6 @@ mosquitto_sub -h 192.168.68.123 -t 'pt/norte/porto-boavista/talho/cf-01/#' -v
   **Esperado:** ligação SSH/consola não cai; a rede aparece e desaparece da lista.
 - [ ] **TB.7 — Pico sem rede conhecida:** levar o Pico para longe da rede (ou remover a única rede e `pico apply`).
   **Esperado:** abre BLE 5 min e tenta de novo a cada 30 s; adicionar a rede por BLE e `pico apply` → volta a ligar.
-- [ ] **TB.8 — ESP32-S3 (CF-07):** ligar o ESP32 e fazer `scan`, depois `pico --name ColdRoom-CF-07 status`.
-  **Esperado:** `ColdRoom-CF-07` visível, `device ESP32-S3`, LED azul aceso 3 min; consola do Pi mostra CF-07 (charcutaria); a página do ESP32 indica "ESP32-S3".
-- [ ] **TB.9 — Botão BOOT no ESP32:** premir BOOT 1 s com o simulador a correr.
-  **Esperado:** LED azul acende; `ColdRoom-CF-07` volta a aparecer no `scan` durante 5 min.
 
 ## 9. Testes automáticos no PC
 

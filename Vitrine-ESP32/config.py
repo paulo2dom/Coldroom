@@ -1,7 +1,7 @@
-# config.py do ESP32-S3 Supermini (enviar para a raiz do ESP32 como config.py).
+# Configuracao da Vitrine SIM no ESP32-S3 Supermini (raiz do ESP32). Nao partilhar.
 WIFI_SSID = 'my_home'
 WIFI_PASSWORD = 'Tsuki!2019'
-DEVICE_NAME = 'ColdRoom-SIM-07'   # id MQTT: tem de ser diferente do Pico
+DEVICE_NAME = 'Vitrine-SIM-01'    # id MQTT: unico no broker
 HTTP_PORT = 80
 # MQTT (apagar MQTT_HOST para desativar)
 MQTT_HOST = '192.168.68.123'
@@ -12,15 +12,15 @@ MQTT_PASSWORD = None
 LOCATION_COUNTRY = 'pt'              # pais
 LOCATION_ZONE = 'norte'              # zona / regiao
 LOCATION_STORE = 'porto-boavista'    # loja
-LOCATION_AREA = 'charcutaria'       # localizacao dentro da loja
-LOCATION_EQUIPMENT = 'cf-07'         # equipamento
+LOCATION_AREA = 'lacticinios'        # localizacao dentro da loja
+LOCATION_EQUIPMENT = 'vt-01'         # equipamento
 MQTT_INTERVAL = 5      # segundos reais entre publicacoes
 
 # --- Redes Wi-Fi conhecidas ------------------------------------------------------
 # O ESP32 liga-se a rede conhecida com melhor sinal. 'mqtt_host' = IP do Raspberry Pi
 # (broker) NESSA rede (se faltar usa MQTT_HOST). Tambem se podem adicionar redes por
 # Bluetooth (ficam em networks.json no ESP32):
-#   py desktop/coldroom_ble.py pico --name ColdRoom-CF-07 add ...
+#   py desktop/vitrine_ble.py vitrine add ...
 WIFI_NETWORKS = [
     {'ssid': WIFI_SSID, 'password': WIFI_PASSWORD, 'mqtt_host': MQTT_HOST},
     {'ssid': 'NOS_Internet_0D19', 'password': '35045546', 'mqtt_host': None},  # rede do config antigo (05/11)

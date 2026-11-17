@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vitrine | Simulador de Vitrine Expositora</title>
+<style>
+:root{color-scheme:dark;--bg:#04110f;--bg2:#071a18;--panel:#0b201e;--line:#17332f;--line2:#24504a;--ink:#e8f6f3;--ink2:#b1cdc7;--muted:#7a9a94;--ice:#34e0c0;--iced:#1a6a5c;--iceb:#092a25;--ok:#35d07f;--okb:#0c2a20;--okl:#1d5a41;--warn:#ffb020;--warnb:#2c2109;--warnl:#6b4d12;--crit:#ff5f57;--critb:#2e1414;--critl:#7a2c29;--prod:#ffb454;--supply:#7ec8ff;--light:#ffe28a;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(1200px 600px at 70% -10%,#0b3330 0,transparent 60%),var(--bg);background-attachment:fixed;color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:grid;grid-template-columns:304px minmax(0,1fr)}
+button,select,input{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}
+.ic.lg{width:26px;height:26px;stroke-width:1.6}
+.sb{position:sticky;top:0;height:100vh;overflow:auto;background:linear-gradient(180deg,#07201d,#051311);border-right:1px solid var(--line);padding-bottom:14px}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 18px 16px;border-bottom:1px solid var(--line)}
+.logo{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--ice);background:var(--iceb);border:1px solid var(--iced);box-shadow:0 0 18px rgba(52,224,192,.18)}
+.brand b{font-size:19px}.brand b span{color:var(--ice)}
+.brand small{display:block;color:var(--muted);font-size:11px;margin-top:-2px}
+.sb h4{margin:16px 18px 8px;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.sb h4 .ic{color:var(--ice);width:15px;height:15px}
+.sbx{padding:0 14px;display:grid;gap:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+label{font-size:12px;color:var(--ink2);display:block;margin-bottom:4px}
+input{width:100%;min-width:0;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:7px 9px}
+input:focus{outline:none;border-color:var(--ice)}
+button{cursor:pointer;border:1px solid var(--iced);background:var(--iceb);color:var(--ice);border-radius:8px;padding:8px 8px;font-size:12px;font-weight:650;width:100%}
+button:hover{background:#0e3b34}
+button.sec{background:var(--panel);border-color:var(--line2);color:var(--ink)}
+button.sec:hover{border-color:var(--iced)}
+button.sel{background:var(--ice);color:#04241e;border-color:var(--ice)}
+button.open{background:var(--warnb);border-color:var(--warn);color:var(--warn)}
+button.danger{background:var(--critb);border-color:var(--critl);color:#ffb3ae}
+button.danger.act{background:var(--crit);color:#2a0705;border-color:var(--crit)}
+.cb{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;display:flex;flex-direction:column}
+.cb button{margin-top:auto}
+.cb strong{display:flex;align-items:center;gap:7px;font-size:12px;margin-bottom:8px;font-weight:600;line-height:1.2}
+.cb strong .ic{color:var(--ice);width:15px;height:15px}
+.cb.wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:10px}
+.cb.wide strong{margin:0;flex:1}.cb.wide button{width:auto;min-width:96px;margin:0}
+#feedback{margin:10px 18px 0;font-size:12px;color:var(--ink2);min-height:17px}
+.mainc{min-width:0}
+header{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 22px;background:rgba(4,17,15,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:18px;font-weight:500;color:var(--ink2)}
+header h1 b{color:var(--ink)}
+header small{color:var(--muted);font-size:12px}
+.sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:9px;font-size:12.5px;font-weight:700;letter-spacing:.03em;border:1px solid var(--line2);background:var(--panel);color:var(--ink2);white-space:nowrap}
+.pill.ice{color:var(--ice);border-color:var(--iced);background:var(--iceb)}
+.pill.amber{color:var(--warn);border-color:var(--warnl);background:var(--warnb)}
+.pill.ok{color:var(--ok);border-color:var(--ok);background:var(--okb);box-shadow:0 0 16px rgba(53,208,127,.18)}
+.pill.warn{color:var(--warn);border-color:var(--warn);background:var(--warnb)}
+.pill.crit{color:var(--crit);border-color:var(--critl);background:var(--critb)}
+main{padding:18px 22px 30px;max-width:1500px}
+.tile{background:linear-gradient(180deg,var(--panel),#09191a);border:1px solid var(--line);border-radius:12px;padding:13px 15px;min-width:0}
+.lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.pt{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;margin:0 0 10px}
+.pt .ic{color:var(--ice)}
+.ibox{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;flex:none;color:var(--ice);background:var(--iceb);border:1px solid var(--iced)}
+.ibox.ok{color:var(--ok);background:var(--okb);border-color:var(--okl)}
+.ibox.warn{color:var(--warn);background:var(--warnb);border-color:var(--warnl)}
+.ibox.crit{color:var(--crit);background:var(--critb);border-color:var(--critl)}
+.hero{display:flex;flex-wrap:wrap;gap:16px 20px;align-items:center;margin-bottom:14px}
+.art{width:150px;height:104px;border-radius:12px;border:1px solid var(--line2);flex:none;box-shadow:0 0 24px rgba(52,224,192,.1)}
+.art rect.door{transition:fill .25s,stroke .25s}
+.hero h2{margin:0;font-size:27px;line-height:1.15}
+.hero h2 span{color:var(--ice)}
+.ln{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;margin-top:5px}
+.ln .ic{color:var(--ice);width:15px;height:15px}
+.ln i{font-style:normal;color:var(--muted);font-size:11px;letter-spacing:.06em;font-weight:600}
+.ln code{font-family:var(--mono);font-size:12.5px;color:var(--ink2);overflow-wrap:anywhere}
+.chipsr{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px}
+.row{display:grid;gap:12px;margin-bottom:12px}
+.r1{grid-template-columns:minmax(0,1.25fr) repeat(3,minmax(0,1fr))}
+.r2{grid-template-columns:repeat(4,minmax(0,1fr))}
+.r3{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+.stat{display:flex;gap:13px;align-items:center}
+.stat .t{font-weight:650;white-space:nowrap}
+.v{display:flex;align-items:center;gap:6px;font-weight:700;margin-top:2px}
+.v.ok{color:var(--ok)}.v.bad{color:var(--crit)}.v.off{color:var(--ink2)}.v.warn{color:var(--warn)}
+.n{font-size:32px;font-weight:700;line-height:1;color:var(--ok)}
+.has .n{color:var(--crit)}
+.lst{border-left:1px solid var(--line2);padding-left:13px;font-size:13px;color:var(--ink2);min-width:0}
+.lst div{display:flex;gap:7px;align-items:baseline}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block;background:#6f8496}
+.dot.ok{background:var(--ok);box-shadow:0 0 6px rgba(53,208,127,.6)}
+.dot.warn{background:var(--warn);box-shadow:0 0 6px rgba(255,176,32,.6)}
+.dot.crit{background:var(--crit);box-shadow:0 0 6px rgba(255,95,87,.7)}
+.tt{display:flex;gap:13px;align-items:flex-start}
+.tt>.ic{color:var(--ice);margin-top:2px}
+.big{font-size:32px;font-weight:700;line-height:1.15;margin:3px 0 2px}
+.sub{color:var(--ink2);font-size:12.5px}
+.tt.main{border-color:var(--ice);background:linear-gradient(180deg,#0c3a33,#0a2723);box-shadow:0 0 0 1px rgba(52,224,192,.2),0 0 26px rgba(52,224,192,.14)}
+.tt.main .lbl{color:var(--ink)}.tt.main .big{color:var(--ok)}
+.tt.warn .big{color:var(--warn)}
+.ch{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.ch .pt{margin:0}
+.cw{height:250px}
+canvas{width:100%;height:100%;display:block}
+.lg2{display:flex;flex-wrap:wrap;gap:13px;font-size:12px;color:var(--ink2)}
+.lg2 i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.lg2 i.d{background:repeating-linear-gradient(90deg,#9db2c4 0 4px,transparent 4px 7px)}
+.kv{display:grid;grid-template-columns:22px minmax(0,1fr) auto 64px;gap:10px;align-items:center;padding:8.5px 0;border-top:1px solid var(--line)}
+.kv>.ic{color:var(--ice)}
+.kv .k{color:var(--ink2)}
+.kv .x{text-align:right;font-weight:650}
+.s{display:flex;align-items:center;gap:7px;font-weight:650;color:var(--ink2)}
+.s.on{color:var(--ok)}.s.bad{color:var(--warn)}.s.err{color:var(--crit)}
+.bar{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden;width:70px}
+.bar span{display:block;height:100%;width:0;background:var(--ice);transition:width .3s}
+.dr{display:inline-flex;gap:5px}
+.dr b{font-size:11px;padding:2px 6px;border-radius:5px;border:1px solid var(--line2);color:var(--ink2);font-weight:650}
+.dr b.o{border-color:var(--warn);color:var(--warn);background:var(--warnb)}
+.ms{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.m{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.m .h{display:flex;gap:8px;align-items:center;color:var(--ink2);font-size:12px;line-height:1.25;min-height:30px}
+.m .h .ic{color:var(--ice)}
+.m .mv{font-size:20px;font-weight:700;margin-top:4px;white-space:nowrap}
+.m .mv small{font-size:13px;color:var(--ink2);font-weight:600;margin-left:3px}
+.note{color:var(--muted);font-size:11px;margin:8px 0 0}
+.ev{list-style:none;margin:0;padding:0;font-size:13px}
+.ev li{display:flex;gap:9px;align-items:baseline;padding:7px 0;border-top:1px solid var(--line)}
+.ev li:first-child{border-top:0}
+.ev .tm{color:var(--muted);font:12px var(--mono);flex:none;min-width:58px}
+.foot{text-align:center;font-size:11px;color:var(--muted);padding-top:6px}
+@media(max-width:1280px){.r1,.r2{grid-template-columns:repeat(2,minmax(0,1fr))}.r3{grid-template-columns:1fr}}
+@media(max-width:900px){body{display:flex;flex-direction:column}.mainc{order:1}.sb{order:2;position:static;height:auto;border-right:0;border-top:1px solid var(--line)}header{padding:10px 12px;position:static}main{padding:12px}.ms{grid-template-columns:repeat(2,minmax(0,1fr))}.chipsr{margin-left:0}}
+@media(max-width:480px){.r1,.r2{grid-template-columns:1fr}}
+</style></head>
+<body>
+<svg id="spr" width="0" height="0" style="position:absolute"></svg>
+<aside class="sb">
+<div class="brand"><span class="logo"><svg class="ic lg"><use href="#i-case"/></svg></span><span><b>Vitrine <span>SIM</span></b><small>Simulador embarcado · ESP32-S3</small></span></div>
+<h4><svg class="ic"><use href="#i-sliders"/></svg>Consola de simulação</h4>
+<div class="sbx">
+<div class="g3"><div><label for="setpoint">Setpoint °C</label><input id="setpoint" type="number" min="-2" max="10" step="0.5" value="3"></div><div><label for="ambient">Loja °C</label><input id="ambient" type="number" min="15" max="35" step="1" value="21"></div><div><label for="humidity">Humid. %</label><input id="humidity" type="number" min="30" max="90" step="5" value="55"></div></div>
+<div class="g3"><button onclick="setNumber('setpoint')">Aplicar</button><button onclick="setNumber('ambient')">Aplicar</button><button onclick="setNumber('humidity')">Aplicar</button></div>
+</div>
+<h4><svg class="ic"><use href="#i-layers"/></svg>Velocidade do tempo</h4>
+<div class="sbx"><div class="g4"><button class="sec" id="sp1" onclick="act('speed',1)">1×</button><button class="sec" id="sp5" onclick="act('speed',5)">5×</button><button class="sec" id="sp20" onclick="act('speed',20)">20×</button><button class="sec" id="sp60" onclick="act('speed',60)">60×</button></div></div>
+<h4><svg class="ic"><use href="#i-store"/></svg>Loja</h4>
+<div class="sbx">
+<div class="g3"><button class="sec" id="schauto" onclick="act('schedule','auto')">Horário</button><button class="sec" id="schopen" onclick="act('schedule','open')">Aberta</button><button class="sec" id="schclosed" onclick="act('schedule','closed')">Fechada</button></div>
+<label style="margin:2px 0 0">Clientes (aberturas de porta)</label>
+<div class="g4"><button class="sec" id="tr0" onclick="act('traffic',0)">Nenhum</button><button class="sec" id="tr1" onclick="act('traffic',1)">Baixo</button><button class="sec" id="tr2" onclick="act('traffic',2)">Médio</button><button class="sec" id="tr3" onclick="act('traffic',3)">Alto</button></div>
+</div>
+<h4><svg class="ic"><use href="#i-case"/></svg>Vitrine</h4>
+<div class="sbx">
+<div class="g3"><button class="sec" id="door0" onclick="door(0)">Porta 1</button><button class="sec" id="door1" onclick="door(1)">Porta 2</button><button class="sec" id="door2" onclick="door(2)">Porta 3</button></div>
+<button class="sec" onclick="post({action:'defrost'})">Iniciar degelo por paragem</button>
+</div>
+<h4><svg class="ic"><use href="#i-warn"/></svg>Injetar falhas (testes)</h4>
+<div class="sbx"><div class="g2">
+<div class="cb"><strong><svg class="ic"><use href="#i-door"/></svg>Porta mal fechada</strong><button id="f_door_ajar" class="danger" onclick="fault('door_ajar')">Ativar</button></div>
+<div class="cb"><strong><svg class="ic"><use href="#i-heat"/></svg>Condensador sujo</strong><button id="f_dirty_condenser" class="danger" onclick="fault('dirty_condenser')">Ativar</button></div>
+<div class="cb"><strong><svg class="ic"><use href="#i-fan"/></svg>Ventilador evaporador</strong><button id="f_evap_fan_fault" class="danger" onclick="fault('evap_fan_fault')">Ativar</button></div>
+<div class="cb"><strong><svg class="ic"><use href="#i-tank"/></svg>Fuga de R290</strong><button id="f_gas_leak" class="danger" onclick="fault('gas_leak')">Ativar</button></div>
+<div class="cb"><strong><svg class="ic"><use href="#i-fog"/></svg>Anti-embaciamento</strong><button id="f_heater_fault" class="danger" onclick="fault('heater_fault')">Ativar</button></div>
+<div class="cb"><strong><svg class="ic"><use href="#i-bulb"/></svg>Iluminação LED</strong><button id="f_lights_fault" class="danger" onclick="fault('lights_fault')">Ativar</button></div>
+<div class="cb wide"><strong><svg class="ic"><use href="#i-plug"/></svg>Falha de energia</strong><button id="f_power_cut" class="danger" onclick="fault('power_cut')">Ativar</button></div>
+</div>
+<div class="g2"><button class="sec" onclick="post({action:'reset'})">Rearmar pressostato</button><button class="sec" onclick="if(confirm('Reiniciar toda a simulação?'))post({action:'restart'})">Reiniciar</button></div>
+</div>
+<p id="feedback" aria-live="polite"></p>
+</aside>
+
+<div class="mainc">
+<header>
+<div><h1>Simulador de <b>vitrine expositora</b></h1><small>Refrigeração comercial · Unidade plug-in R290</small></div>
+<div class="sp"></div>
+<span class="pill ice">DADOS SIMULADOS</span>
+<span id="mqtt" class="pill" title="">MQTT —</span>
+<span id="conn" class="pill">A ligar…</span>
+</header>
+<main>
+<div class="hero">
+<svg class="art" viewBox="0 0 150 104" aria-hidden="true"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#123c37"/><stop offset="1" stop-color="#081a18"/></linearGradient></defs><rect width="150" height="104" fill="url(#hg)"/>
+<rect x="22" y="8" width="106" height="88" rx="5" fill="#0b2420" stroke="#3b8f80" stroke-width="1.5"/><rect id="lt" x="27" y="12" width="96" height="3" rx="1.5" fill="#2a4a45"/>
+<rect id="dg0" class="door" x="27" y="18" width="30" height="64" rx="2" fill="#0f3a34" stroke="#34e0c0" stroke-width="1.2"/><rect id="dg1" class="door" x="60" y="18" width="30" height="64" rx="2" fill="#0f3a34" stroke="#34e0c0" stroke-width="1.2"/><rect id="dg2" class="door" x="93" y="18" width="30" height="64" rx="2" fill="#0f3a34" stroke="#34e0c0" stroke-width="1.2"/>
+<path d="M30 36h24M30 52h24M30 68h24M63 36h24M63 52h24M63 68h24M96 36h24M96 52h24M96 68h24" stroke="#24504a" stroke-width="1.5"/><path d="M53 44v10M86 44v10M119 44v10" stroke="#34e0c0" stroke-width="2" stroke-linecap="round"/>
+<rect x="27" y="85" width="96" height="7" rx="1.5" fill="#0e2b27" stroke="#24504a"/><path d="M34 88.5h20M96 88.5h20" stroke="#3b8f80" stroke-dasharray="2 2"/></svg>
+<div style="min-width:0"><h2>Vitrine expositora <span id="equip">VT-01</span></h2>
+<div class="sub">3 portas de vidro · plug-in R290 · ESP32-S3</div>
+<div class="ln" id="crumbs" aria-label="Localização"></div>
+<div class="ln"><svg class="ic"><use href="#i-topic"/></svg><code id="topic"></code></div></div>
+<div class="chipsr"><span class="pill ice num"><svg class="ic"><use href="#i-clock"/></svg><span id="clock">—</span></span><span class="pill" id="store">—</span><span class="pill amber" id="mode">—</span><span class="pill num"><svg class="ic"><use href="#i-layers"/></svg><span id="speedtxt">—</span></span></div>
+</div>
+
+<div class="row r1">
+<div class="tile stat" id="alarmbox"><span class="ibox ok" id="alarmic"><svg class="ic lg"><use href="#i-bell"/></svg></span><div><div class="t">Alarmes ativos</div><div class="n num" id="alarmnum">0</div></div><div class="lst" id="alarms">Sem alarmes ativos</div></div>
+<div class="tile stat"><span class="ibox" id="pwric"><svg class="ic lg"><use href="#i-plug"/></svg></span><div><div class="t">Alimentação 230 V</div><div id="pwr"></div></div></div>
+<div class="tile stat"><span class="ibox" id="lightic"><svg class="ic lg"><use href="#i-bulb"/></svg></span><div><div class="t">Iluminação LED</div><div id="light"></div></div></div>
+<div class="tile stat"><span class="ibox" id="glassic"><svg class="ic lg"><use href="#i-fog"/></svg></span><div><div class="t">Vidros das portas</div><div id="glass"></div></div></div>
+</div>
+
+<div class="row r2">
+<div class="tile tt main" id="airtile"><svg class="ic lg"><use href="#i-thermo"/></svg><div><div class="lbl">Ar da vitrine</div><div class="big num" id="air">—</div><div class="sub num" id="target">Setpoint —</div></div></div>
+<div class="tile tt" id="prodtile"><svg class="ic lg"><use href="#i-clip"/></svg><div><div class="lbl">Produto (sonda HACCP)</div><div class="big num" id="prod">—</div><div class="sub num" id="haccp">—</div></div></div>
+<div class="tile tt"><svg class="ic lg"><use href="#i-wind"/></svg><div><div class="lbl">Ar insuflado</div><div class="big num" id="supply">—</div><div class="sub num" id="ret">Retorno —</div></div></div>
+<div class="tile tt"><svg class="ic lg"><use href="#i-snow"/></svg><div><div class="lbl">Evaporador</div><div class="big num" id="evap">—</div><div class="sub" id="defr">—</div></div></div>
+</div>
+
+<div class="row r3">
+<div class="tile"><div class="ch"><h3 class="pt"><svg class="ic"><use href="#i-trend"/></svg>Tendência térmica</h3><div class="lg2"><span><i style="background:var(--ice)"></i>Ar</span><span><i style="background:var(--prod)"></i>Produto</span><span><i style="background:var(--supply)"></i>Insuflação</span><span><i class="d"></i>Setpoint</span></div></div><div class="cw"><canvas id="chart"></canvas></div></div>
+<div class="tile"><h3 class="pt" style="margin-bottom:4px"><svg class="ic"><use href="#i-gear"/></svg>Componentes</h3>
+<div class="kv"><svg class="ic"><use href="#i-comp"/></svg><span class="k">Compressor (velocidade fixa)</span><span id="comp"></span><span class="x num" id="duty">—</span></div>
+<div class="kv"><svg class="ic"><use href="#i-fan"/></svg><span class="k">Ventiladores do evaporador</span><span id="fans"></span><span></span></div>
+<div class="kv"><svg class="ic"><use href="#i-fan"/></svg><span class="k">Ventilador do condensador</span><span id="cfan"></span><span></span></div>
+<div class="kv"><svg class="ic"><use href="#i-snow"/></svg><span class="k">Degelo por paragem</span><span id="defrost"></span><span class="x num" id="defrnext"></span></div>
+<div class="kv"><svg class="ic"><use href="#i-door"/></svg><span class="k">Portas de vidro</span><span class="dr" id="doors"></span><span class="x num" id="opens">—</span></div>
+<div class="kv"><svg class="ic"><use href="#i-heat"/></svg><span class="k">Resistência anti-embaciamento</span><span class="s"><span class="bar"><span id="afbar"></span></span></span><span class="x num" id="af">—%</span></div>
+<div class="kv"><svg class="ic"><use href="#i-shield"/></svg><span class="k">Pressostato de alta</span><span id="trip"></span><span></span></div>
+</div>
+</div>
+
+<div class="row"><div class="tile"><h3 class="pt"><svg class="ic"><use href="#i-bars"/></svg>Ciclo R290, energia e HACCP</h3><div class="ms" id="ms"></div>
+<p class="note">* Pressões estimadas por uma curva aproximada do R290 e índices ilustrativos; não equivalem a medições nem a cálculos de engenharia reais.</p></div></div>
+
+<div class="row"><div class="tile"><h3 class="pt"><svg class="ic"><use href="#i-list"/></svg>Registo de eventos</h3><ul class="ev" id="events"><li class="muted">A aguardar dados…</li></ul></div></div>
+<div class="foot">Vitrine SIM · Simulador didático · Valores e alarmes fictícios · Não utilizar para controlo nem conformidade alimentar</div>
+</main>
+</div>
+<script>
+const IC={snow:"M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1M9.5 3.5L12 6l2.5-2.5M9.5 20.5L12 18l2.5 2.5M3.5 9.5L6 12l-2.5 2.5M20.5 9.5L18 12l2.5 2.5",
+bell:"M6 9a6 6 0 0112 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 004 0",
+pulse:"M3 12h4l3-8 4 16 3-8h4",
+drop:"M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z",
+tank:"M7 7h10a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2zM9 7V4h6v3M5 12h14M5 16h14",
+thermo:"M14 14.8V5a2 2 0 00-4 0v9.8a4 4 0 104 0zM12 9v8",
+wind:"M3 8h10a3 3 0 10-3-3M3 12h15a3 3 0 11-3 3M3 16h7a2.5 2.5 0 11-2.5 2.5",
+fan:"M12 10.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM12 10.5C11 6 12.5 3 15.5 3s3 4.5-1 7M13.5 12c4.5-1 7.5.5 7.5 3.5s-4.5 3-7-1M12 13.5c1 4.5-.5 7.5-3.5 7.5s-3-4.5 1-7M10.5 12C6 13 3 11.5 3 8.5s4.5-3 7 1",
+door:"M6 3h12v18H6zM14.5 11v2M3 21h18",
+shield:"M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3zM9 12l2 2 4-4",
+gauge:"M4 18a8 8 0 1116 0M12 18l4-6M12 6v1.5M6 12H4.5M19.5 12H18",
+bolt:"M13 2L4 14h7l-1 8 9-12h-7l1-8z",
+clock:"M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5l3 2",
+layers:"M12 3l9 4.5-9 4.5-9-4.5L12 3zM3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5",
+pin:"M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11zM12 7.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z",
+topic:"M4 5h16v6H4zM4 13h16v6H4zM7.5 8h.01M7.5 16h.01M11 8h6M11 16h6",
+trend:"M3 17l6-6 4 4 8-8M15 7h6v6",
+bars:"M5 20V11M12 20V4M19 20v-7",
+list:"M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01",
+comp:"M5 9h14v10H5zM8 9V5.5h8V9M9 14h6M3 13h2M19 13h2",
+heat:"M8 3c-2 3 2 4 0 7M12 3c-2 3 2 4 0 7M16 3c-2 3 2 4 0 7M4 15h16M4 19h16",
+check:"M12 3a9 9 0 100 18 9 9 0 000-18zM8 12.5l2.5 2.5L16 9.5",
+warn:"M12 3l10 18H2L12 3zM12 10v5M12 18h.01",
+gear:"M12 9a3 3 0 100 6 3 3 0 000-6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1",
+plug:"M9 3v5M15 3v5M6 8h12v3a6 6 0 01-12 0V8zM12 17v4",
+timer:"M12 7a7 7 0 100 14 7 7 0 000-14zM12 11v3.5M9.5 3h5M12 3v4",
+sliders:"M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M16 4v4M10 10v4M18 16v4",
+case:"M4 3h16v18H4zM9.3 6v12M14.7 6v12M4 6h16M4 18h16M7.6 11v2M13 11v2M18.4 11v2",
+bulb:"M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z",
+store:"M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0V9M5 13v8h14v-8M10 21v-5h4v5",
+users:"M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM2.5 20a6.5 6.5 0 0113 0M16 4.3a3.5 3.5 0 010 6.4M18 14.5a6.5 6.5 0 013.5 5.5",
+fog:"M7 10a5 5 0 0110 0M4 14h16M6 18h12M8 22h8",
+clip:"M9 4h6v3H9zM7 5.5H5v15h14v-15h-2M8.5 13l2.5 2.5 4.5-5"};
+const E=id=>document.getElementById(id);
+E('spr').innerHTML=Object.keys(IC).map(n=>'<symbol id="i-'+n+'" viewBox="0 0 24 24"><path d="'+IC[n]+'"/></symbol>').join('');
+const I=n=>'<svg class="ic"><use href="#i-'+n+'"/></svg>';
+const F=(n,d=1)=>Number(n).toFixed(d);
+const esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let state=null,wasReady=false,locKey='';
+function text(id,x){E(id).textContent=x}
+function act(action,value){post({action,value})}
+function door(i){if(state)post({action:'door',index:i,value:!state.doors_manual[i]})}
+function fault(name){if(state)post({action:'fault',name,value:!state.faults[name]})}
+function setNumber(action){const value=Number(E(action).value);if(!Number.isFinite(value))return;post({action,value})}
+async function post(payload){try{const r=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const j=await r.json();text('feedback',j.error||'Comando de simulação aplicado');if(!r.ok)throw Error(j.error||r.status);await update()}catch(e){text('feedback','Erro: '+e.message)}}
+function nice(v){return String(v).replace(/-/g,' ').replace(/(^|\s)\S/g,c=>c.toUpperCase())}
+function st(id,cls,t){E(id).innerHTML='<span class="s '+cls+'"><span class="dot '+({on:'ok',bad:'warn',err:'crit'}[cls]||'')+'"></span>'+t+'</span>'}
+function stat(id,cls,icon,t){E(id).innerHTML='<div class="v '+cls+'">'+I(icon)+t+'</div>';E(id+'ic').className='ibox'+(cls==='bad'?' crit':cls==='warn'?' warn':cls==='ok'?' ok':'')}
+function paintLoc(s){
+ const l=s.location;
+ if(l&&JSON.stringify(l)!==locKey){locKey=JSON.stringify(l);text('equip',l.equipamento.toUpperCase());
+  E('crumbs').innerHTML=I('pin')+[['PAÍS',l.pais.toUpperCase()],['ZONA',nice(l.zona)],['LOJA',nice(l.loja)],['LOCAL',nice(l.local)]].map(p=>'<i>'+p[0]+'</i><span>'+esc(p[1])+'</span>').join('<span class="muted">›</span>');
+  document.title='Vitrine | '+l.equipamento.toUpperCase()+' · '+nice(l.loja)}
+ const m=s.mqtt,el=E('mqtt');
+ if(!m){text('mqtt','MQTT —');el.className='pill';return}
+ text('topic',m.enabled?'Tópico MQTT: '+m.topic+'/state':'Tópico (MQTT desativado): '+m.topic);
+ el.title=m.host?'Broker '+m.host:'';
+ if(!m.enabled){text('mqtt','MQTT DESATIVADO');el.className='pill'}
+ else if(m.connected){text('mqtt','● MQTT LIGADO');el.className='pill ok'}
+ else{text('mqtt','● MQTT SEM LIGAÇÃO');el.className='pill warn'}}
+function paint(s){
+ state=s;paintLoc(s);
+ text('conn','● SIMULADOR ONLINE');E('conn').className='pill ok';
+ text('clock',s.clock+' · T+'+Math.floor(s.sim_seconds/3600)+'h'+String(Math.floor((s.sim_seconds%3600)/60)).padStart(2,'0'));
+ text('store',s.store_open?'LOJA ABERTA':'LOJA FECHADA');E('store').className='pill '+(s.store_open?'ok':'');
+ const mode=!s.phase_ok?'SEM ENERGIA':s.defrost?'DEGELO':s.trip?'PRESSOSTATO':s.compressor?'REFRIGERAÇÃO':'STANDBY';
+ text('mode',mode);E('mode').className='pill '+(!s.phase_ok||s.trip&&!s.defrost?'crit':mode==='STANDBY'?'amber':'ice');
+ text('speedtxt',s.speed+'×');[1,5,20,60].forEach(v=>E('sp'+v).classList.toggle('sel',s.speed==v));
+ ['auto','open','closed'].forEach(v=>E('sch'+v).classList.toggle('sel',s.schedule===v));
+ [0,1,2,3].forEach(v=>E('tr'+v).classList.toggle('sel',s.traffic===v));
+ // hero: portas e iluminacao
+ s.doors.forEach((o,i)=>{const r=E('dg'+i);r.setAttribute('fill',o?'#3a2a08':'#0f3a34');r.setAttribute('stroke',o?'#ffb020':'#34e0c0');
+  const b=E('door'+i);b.textContent='Porta '+(i+1)+(s.doors_manual[i]?' ✓':'');b.className=s.doors_manual[i]?'open':'sec'});
+ E('lt').setAttribute('fill',s.lights?'#ffe28a':'#2a4a45');
+ // temperaturas
+ text('air',F(s.room)+' °C');text('target','Setpoint '+F(s.target)+' °C · loja '+F(s.ambient,0)+' °C');
+ E('airtile').className='tile tt main'+(!s.defrost&&s.room>s.target+2?' warn':'');
+ text('prod',F(s.product)+' °C');const h=s.haccp;text('haccp','mín '+F(h.min)+' · máx '+F(h.max)+' · >'+F(h.limit,0)+' °C: '+h.minutes_above+' min');
+ E('prodtile').className='tile tt'+(s.product>h.limit?' warn':'');
+ text('supply',F(s.discharge_air)+' °C');text('ret','Retorno '+F(s.return_air)+' °C');
+ text('evap',F(s.evaporator)+' °C');text('defr',s.defrost?'Em degelo (compressor parado)':'Próximo degelo em '+Math.floor(s.defrost_in_min/60)+'h'+String(s.defrost_in_min%60).padStart(2,'0'));
+ // estados
+ stat('pwr',s.phase_ok?'ok':'bad',s.phase_ok?'check':'warn',s.phase_ok?F(s.voltage,0)+' V':'SEM ENERGIA');
+ const lf=s.faults.lights_fault;
+ stat('light',lf?'bad':s.lights?'ok':'off',lf?'warn':'bulb',lf?'AVARIA':s.lights?'Ligada':'Desligada (noite)');
+ const fog=s.fog_pct;stat('glass',fog>60?'bad':fog>20?'warn':'ok',fog>20?'fog':'check',fog>60?'EMBACIADOS '+fog+'%':fog>20?'A embaciar '+fog+'%':'Limpos');
+ // componentes
+ st('comp',s.compressor?'on':'',s.compressor?'Em funcionamento':'Parado');text('duty',s.duty_pct+'%');
+ st('fans',s.fans?'on':s.phase_ok?'err':'',s.fans?'Ligados':s.phase_ok?'AVARIA':'Desligados');
+ st('cfan',s.condenser_fan?'on':'',s.condenser_fan?'Ligado':'Parado');
+ st('defrost',s.defrost?'bad':'',s.defrost?'ATIVO':'Inativo');text('defrnext',s.defrost?'':Math.floor(s.defrost_in_min/60)+'h'+String(s.defrost_in_min%60).padStart(2,'0'));
+ E('doors').innerHTML=s.doors.map((o,i)=>'<b class="'+(o?'o':'')+'">P'+(i+1)+'</b>').join('');text('opens',s.door_openings+'×');
+ text('af',s.antifog_pct+'%');E('afbar').style.width=s.antifog_pct+'%';
+ st('trip',s.trip?'err':'on',s.trip?'DISPARADO':'Normal');
+ E('ms').innerHTML=[['gauge','Pressão de aspiração*',F(s.suction_bar,2),'bar'],['gauge','Pressão de descarga*',F(s.discharge_bar,2),'bar'],['heat','Temp. de condensação',F(s.condenser),'°C'],['heat','Superaquecimento*',F(s.superheat),'K'],['snow','Subarrefecimento*',F(s.subcooling),'K'],
+  ['bolt','Tensão monofásica',F(s.voltage),'V'],['plug','Corrente elétrica',F(s.current,2),'A'],['pulse','Potência instantânea',F(s.power_kw*1000,0),'W'],['bars','Energia acumulada',F(s.energy_kwh,2),'kWh'],['timer','Funcionamento (1 h)',s.duty_pct,'%'],
+  ['comp','Arranques do compressor',s.compressor_starts,''],['timer','Horas do compressor',F(s.compressor_hours),'h'],['users','Aberturas de porta',s.door_openings,''],['drop','Humidade da loja',F(s.humidity,0),'%'],['clip','HACCP máx. produto',F(h.max),'°C']]
+  .map(m=>'<div class="m"><div class="h">'+I(m[0])+'<span>'+m[1]+'</span></div><div class="mv num">'+m[2]+'<small>'+m[3]+'</small></div></div>').join('');
+ Object.keys(s.faults).forEach(k=>{const b=E('f_'+k);if(b){b.textContent=s.faults[k]?'Remover':'Ativar';b.classList.toggle('act',!!s.faults[k])}});
+ const n=s.alarms.length;text('alarmnum',n);E('alarmbox').classList.toggle('has',n>0);E('alarmic').className='ibox '+(n?'crit':'ok');
+ E('alarms').innerHTML=n?s.alarms.map(x=>'<div><span class="dot crit"></span><span>'+esc(x)+'</span></div>').join(''):'Sem alarmes ativos';
+ E('events').innerHTML=s.events.slice(0,8).map(x=>'<li><span class="tm">T+'+Math.floor(x.t/60)+'m</span><span class="dot '+(x.level==='ALARM'?'crit':x.level==='WARN'?'warn':'ok')+'"></span><span>'+esc(x.message)+'</span></li>').join('')||'<li class="muted">Sem eventos.</li>';
+ if(!wasReady){E('setpoint').value=s.target;E('ambient').value=s.ambient;E('humidity').value=s.humidity;wasReady=true}
+ draw(s.history,s.target)}
+function draw(points,sp){
+ const cv=E('chart'),b=cv.getBoundingClientRect(),r=window.devicePixelRatio||1;if(!b.width)return;
+ cv.width=Math.round(b.width*r);cv.height=Math.round(b.height*r);
+ const c=cv.getContext('2d'),w=b.width,h=b.height,L=46,R=10,T=10,B=12;c.setTransform(r,0,0,r,0,0);
+ c.font='11px system-ui';c.fillStyle='#7a9a94';
+ if(!points||points.length<2){c.fillText('A recolher histórico (1 ponto por minuto simulado)…',L,h/2);return}
+ let vals=points.flatMap(p=>p.slice(1));if(sp!=null)vals.push(sp);
+ let lo=Math.floor(Math.min(...vals)-1),hi=Math.ceil(Math.max(...vals)+1);if(hi<=lo)hi=lo+1;
+ const x=i=>L+i*(w-L-R)/Math.max(1,points.length-1),y=v=>T+(hi-v)*(h-T-B)/(hi-lo);
+ c.lineWidth=1;
+ for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,yy=Math.round(y(v))+.5;c.strokeStyle='#17332f';c.beginPath();c.moveTo(L,yy);c.lineTo(w-R,yy);c.stroke();c.fillText(F(v,(hi-lo)<8?1:0)+' °C',4,yy+4)}
+ if(sp!=null){c.save();c.setLineDash([5,4]);c.strokeStyle='#9db2c4';c.lineWidth=1.2;c.beginPath();c.moveTo(L,y(sp));c.lineTo(w-R,y(sp));c.stroke();c.restore()}
+ c.lineJoin='round';
+ [[3,'#7ec8ff',1.5],[2,'#ffb454',1.8],[1,'#34e0c0',2.2]].forEach(s=>{c.strokeStyle=s[1];c.lineWidth=s[2];c.beginPath();points.forEach((p,i)=>i?c.lineTo(x(i),y(p[s[0]])):c.moveTo(x(i),y(p[s[0]])));c.stroke()})}
+async function update(){try{const r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)throw Error(r.status);paint(await r.json())}catch(e){text('conn','● SEM LIGAÇÃO');E('conn').className='pill crit';text('mqtt','MQTT —');E('mqtt').className='pill'}}
+addEventListener('resize',()=>{if(state)draw(state.history,state.target)});
+update();setInterval(update,2000);
+</script></body></html>

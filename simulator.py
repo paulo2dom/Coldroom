@@ -196,7 +196,7 @@ class ColdRoom:
         if self.trip:
             alarms.append('COMPRESSOR BLOQUEADO')
         return {
-            'simulated': True, 'device': getattr(self, 'device_label', 'Pico W / ColdRoom SIM'),
+            'simulated': True, 'device': 'Pico W / ColdRoom SIM',
             'sim_seconds': round(self.sim_seconds), 'speed': self.speed,
             'target': self.target, 'ambient': self.ambient,
             'room': round(self.room, 2), 'discharge_air': round(self.discharge_air, 2),
