@@ -164,6 +164,19 @@ Se o IP do Pi for desconhecido antes de chegar, adiciona-se a rede ao Pico já n
 claro e fica em texto no `networks.json` do Pico. No Pi guarda-se só a PSK derivada. As janelas
 curtas reduzem a exposição. Usar apenas em laboratório, com redes de teste.
 
+### Redes configuradas (NOS e my_home)
+
+| Equipamento | NOS_Internet_0D19 (preferida, IP fixo) | my_home (reserva, DHCP) |
+|---|---|---|
+| Raspberry Pi (broker e consola) | 10.33.33.15 (`/etc/dhcpcd.conf`, bloco `ssid`) | 192.168.68.123 |
+| Pico W (CF-01) | 10.33.33.16 | 192.168.68.125 |
+| ESP32-S3 (VT-01) | 10.33.33.17 | 192.168.68.124 |
+
+- Router da NOS: 10.33.33.1 (/24). A prioridade é a mesma nos três equipamentos (NOS 2, my_home 1), para nunca ficarem em redes diferentes.
+- No `config.py`, cada rede pode ter `ip` (IP fixo), `gw`, `priority` e `mqtt_host`.
+- **Mudança automática de rede:** se o Wi-Fi cair mais de 30 s, o equipamento reinicia e liga-se à melhor rede disponível (sem a NOS, vai para a my_home). Se estiver na my_home, de 5 em 5 min procura a NOS e, se a vir, reinicia para voltar a ela. O Pi faz o mesmo de 2 em 2 min com o `coldroom-wifi-prefer.timer` (pasta `coldroom-console`).
+- **Descoberta do broker:** a consola do Pi anuncia o broker por UDP (porta 47830) de 5 em 5 s. Numa rede sem `mqtt_host`, ou se o broker falhar 2 vezes, o Pico e o ESP32 usam o IP desse anúncio.
+
 ## Segurança e limitações
 
 - **Apenas simulação**: não controla cargas elétricas, compressores, válvulas nem sistemas físicos.

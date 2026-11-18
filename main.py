@@ -292,8 +292,49 @@ def serve(client):
         send(client, '404 Not Found', '{"error":"endpoint inexistente"}')
 
 
+# --- Vigia do Wi-Fi: rede perdida -> reinicia; rede preferida de volta -> muda para ela ---
+WIFI_LOST_S = getattr(config, 'WIFI_LOST_S', 30)          # sem Wi-Fi ha mais de 30 s: reiniciar
+PREFER_CHECK_S = getattr(config, 'WIFI_PREFER_CHECK_S', 300)  # de 5 em 5 min procura rede preferida
+wifi_lost_at = None
+prefer_next = time.ticks_add(time.ticks_ms(), PREFER_CHECK_S * 1000)
+
+
+def wifi_guard():
+    """Garante que todos os equipamentos acabam na mesma rede que o Raspberry Pi:
+    a de maior prioridade disponivel (NOS) e, sem ela, a de reserva (my_home)."""
+    global wifi_lost_at, prefer_next
+    now = time.ticks_ms()
+    if not wlan.isconnected():
+        if wifi_lost_at is None:
+            wifi_lost_at = now
+            print('Wi-Fi: ligacao perdida a %s' % active_net['ssid'])
+        elif time.ticks_diff(now, wifi_lost_at) > WIFI_LOST_S * 1000:
+            print('Wi-Fi: sem rede ha %d s; a reiniciar para escolher outra' % WIFI_LOST_S)
+            time.sleep(1)
+            machine.reset()
+        return
+    wifi_lost_at = None
+    if not PREFER_CHECK_S or time.ticks_diff(now, prefer_next) < 0:
+        return
+    prefer_next = time.ticks_add(now, PREFER_CHECK_S * 1000)
+    mine = active_net.get('priority') or 0
+    better = [n['ssid'] for n in netcfg.load(config) if (n.get('priority') or 0) > mine]
+    if not better:
+        return
+    try:
+        seen = {r[0].decode('utf-8', 'replace'): r[3] for r in wlan.scan()}
+    except OSError:
+        return
+    for ssid in better:
+        if seen.get(ssid, -999) > -80:
+            print('Wi-Fi: rede preferida %s disponivel (%d dBm); a reiniciar para mudar' % (ssid, seen[ssid]))
+            time.sleep(1)
+            machine.reset()
+
+
 bootsel_since = None
 while True:
+    wifi_guard()
     ble_step()
     # BOOTSEL premido 1 s -> abre a janela BLE
     if rp2.bootsel_button():

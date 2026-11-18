@@ -3,7 +3,9 @@
 Origem das redes:
   - config.py: WIFI_NETWORKS (predefinidas, editadas no PC)
   - networks.json: redes adicionadas/removidas por Bluetooth (BLE)
-Cada rede: {'ssid': ..., 'password': ..., 'mqtt_host': ...}. O mqtt_host e o IP
+Cada rede: {'ssid': ..., 'password': ..., 'mqtt_host': ..., 'ip': ..., 'gw': ...}.
+'ip' (opcional) = IP fixo nessa rede, ex.: '10.33.33.16/24'; sem 'ip' usa DHCP.
+'priority' (opcional): com varias redes visiveis liga-se a de maior prioridade. O mqtt_host e o IP
 do Raspberry Pi (broker) NESSA rede; se faltar (None), o broker e descoberto
 automaticamente pelo anuncio UDP que o Pi envia (porta 47830).
 """
@@ -81,6 +83,28 @@ def remove(ssid, config):
     _write_file(saved, removed)
 
 
+def _ipconfig(wlan, n):
+    """IP fixo da rede ('ip': '10.33.33.16/24', 'gw': '10.33.33.1') ou DHCP se nao tiver."""
+    ip = n.get('ip')
+    try:
+        if ip:
+            addr = ip if '/' in ip else ip + '/24'
+            gw = n.get('gw') or addr.split('/')[0].rsplit('.', 1)[0] + '.1'
+            wlan.ipconfig(dhcp4=False, addr4=addr, gw4=gw)
+            try:
+                import network
+                network.ipconfig(dns=n.get('dns') or gw)
+            except Exception:
+                pass
+        else:
+            wlan.ipconfig(dhcp4=True)
+    except (AttributeError, ValueError, OSError, TypeError):
+        if ip:  # MicroPython antigo: ifconfig (ip, mascara, gateway, dns)
+            a = ip.split('/')[0]
+            gw = n.get('gw') or a.rsplit('.', 1)[0] + '.1'
+            wlan.ifconfig((a, '255.255.255.0', gw, n.get('dns') or gw))
+
+
 def connect(wlan, nets, timeout_s=15):
     """Procura as redes conhecidas visiveis e liga-se a de melhor sinal.
     Devolve a rede usada (dict) ou None."""
@@ -100,13 +124,16 @@ def connect(wlan, nets, timeout_s=15):
         print('Wi-Fi: scan falhou', e)
         return None
     print('Wi-Fi: %d redes visiveis' % len(seen))
-    candidates = sorted([n for n in nets if n['ssid'] in seen], key=lambda n: -seen[n['ssid']])
+    # Maior prioridade primeiro (igual a do Raspberry Pi); em empate, o melhor sinal
+    candidates = sorted([n for n in nets if n['ssid'] in seen],
+                        key=lambda n: (-(n.get('priority') or 0), -seen[n['ssid']]))
     for n in candidates:
         print('Wi-Fi: a ligar a %s (%d dBm)' % (n['ssid'], seen[n['ssid']]))
         try:
             wlan.disconnect()
         except OSError:
             pass
+        _ipconfig(wlan, n)
         wlan.connect(n['ssid'], n.get('password') or '')
         t0 = time.ticks_ms()
         while time.ticks_diff(time.ticks_ms(), t0) < timeout_s * 1000:

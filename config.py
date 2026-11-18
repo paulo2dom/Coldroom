@@ -21,8 +21,9 @@ MQTT_INTERVAL = 5      # segundos reais entre publicacoes
 # (broker) NESSA rede (se faltar usa MQTT_HOST). Tambem se podem adicionar redes por
 # Bluetooth (ficam em networks.json no Pico): py desktop/coldroom_ble.py pico add ...
 WIFI_NETWORKS = [
-    {'ssid': WIFI_SSID, 'password': WIFI_PASSWORD, 'mqtt_host': MQTT_HOST},
-    {'ssid': 'NOS_Internet_0D19', 'password': '35045546', 'mqtt_host': None},  # broker descoberto automaticamente (anuncio do Pi)
+    {'ssid': WIFI_SSID, 'password': WIFI_PASSWORD, 'mqtt_host': MQTT_HOST, 'priority': 1},
+    {'ssid': 'NOS_Internet_0D19', 'password': '35045546', 'mqtt_host': '10.33.33.15',
+     'ip': '10.33.33.16/24', 'gw': '10.33.33.1', 'priority': 2},  # rede NOS (preferida): IPs fixos (Pi .15, Pico .16, ESP32 .17)
     # {'ssid': 'OutraRede', 'password': 'password123', 'mqtt_host': '192.168.1.50'},
 ]
 

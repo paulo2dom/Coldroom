@@ -114,6 +114,19 @@ py desktop\vitrine_ble.py vitrine apply
 
 LEDs da placa: o **RGB junto ao chip** (WS2812 no GPIO48, `LED_RGB = True`, testado) é o indicador do Bluetooth. O **azul a piscar junto ao USB-C ("BAT")** é do carregador de bateria: pisca sempre que não há bateria ligada, é normal e o programa não o controla.
 
+### Redes configuradas (NOS e my_home)
+
+| Equipamento | NOS_Internet_0D19 (preferida, IP fixo) | my_home (reserva, DHCP) |
+|---|---|---|
+| Raspberry Pi (broker e consola) | 10.33.33.15 (`/etc/dhcpcd.conf`, bloco `ssid`) | 192.168.68.123 |
+| Pico W (CF-01) | 10.33.33.16 | 192.168.68.125 |
+| ESP32-S3 (VT-01) | 10.33.33.17 | 192.168.68.124 |
+
+- Router da NOS: 10.33.33.1 (/24). A prioridade é a mesma nos três equipamentos (NOS 2, my_home 1), para nunca ficarem em redes diferentes.
+- No `config.py`, cada rede pode ter `ip` (IP fixo), `gw`, `priority` e `mqtt_host`.
+- **Mudança automática de rede:** se o Wi-Fi cair mais de 30 s, o equipamento reinicia e liga-se à melhor rede disponível (sem a NOS, vai para a my_home). Se estiver na my_home, de 5 em 5 min procura a NOS e, se a vir, reinicia para voltar a ela. O Pi faz o mesmo de 2 em 2 min com o `coldroom-wifi-prefer.timer` (pasta `coldroom-console`).
+- **Descoberta do broker:** a consola do Pi anuncia o broker por UDP (porta 47830) de 5 em 5 s. Numa rede sem `mqtt_host`, ou se o broker falhar 2 vezes, o Pico e o ESP32 usam o IP desse anúncio.
+
 ## Watchdog e causa do arranque
 
 O `main.py` ativa o watchdog do ESP32 (`WDT_S = 30` por omissão; `WDT_S = 0` no `config.py` desliga-o). Se o ciclo principal parar mais de 30 s, o ESP32 reinicia sozinho e volta ao broker.

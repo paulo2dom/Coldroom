@@ -1,0 +1,7 @@
+[Unit]
+Description=ColdRoom - voltar à rede Wi-Fi preferida (NOS) quando disponível
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/coldroom-console/coldroom_wifi_prefer.py

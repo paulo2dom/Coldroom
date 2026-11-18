@@ -23,7 +23,9 @@ for svc in coldroom-console coldroom-examples; do
   sed "s/^User=.*/User=$RUN_USER/" $svc.service | sudo tee /etc/systemd/system/$svc.service >/dev/null
 done
 sudo cp coldroom-ble.service /etc/systemd/system/   # corre como root (BlueZ + wpa_cli)
+sudo cp coldroom-wifi-prefer.service coldroom-wifi-prefer.timer /etc/systemd/system/   # voltar a rede preferida
 sudo systemctl daemon-reload
+sudo systemctl enable --now coldroom-wifi-prefer.timer >/dev/null 2>&1
 for svc in coldroom-console coldroom-examples coldroom-ble; do
   sudo systemctl enable $svc >/dev/null 2>&1
   sudo systemctl restart $svc
