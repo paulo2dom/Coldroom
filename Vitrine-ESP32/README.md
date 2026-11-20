@@ -114,17 +114,27 @@ py desktop\vitrine_ble.py vitrine apply
 
 LEDs da placa: o **RGB junto ao chip** (WS2812 no GPIO48, `LED_RGB = True`, testado) é o indicador do Bluetooth. O **azul a piscar junto ao USB-C ("BAT")** é do carregador de bateria: pisca sempre que não há bateria ligada, é normal e o programa não o controla.
 
-### Redes configuradas (NOS e my_home)
+### Exemplo: rede preferida e rede de reserva
 
-| Equipamento | NOS_Internet_0D19 (preferida, IP fixo) | my_home (reserva, DHCP) |
+Exemplo genérico com duas redes (substituir pelos nomes, passwords e IPs reais no `config.py` de cada equipamento):
+
+| Equipamento | `RedeLab` (preferida, IP fixo) | `RedeReserva` (reserva, DHCP) |
 |---|---|---|
-| Raspberry Pi (broker e consola) | 10.33.33.15 (`/etc/dhcpcd.conf`, bloco `ssid`) | 192.168.68.123 |
-| Pico W (CF-01) | 10.33.33.16 | 192.168.68.125 |
-| ESP32-S3 (VT-01) | 10.33.33.17 | 192.168.68.124 |
+| Raspberry Pi (broker e consola) | 192.168.10.15 (`/etc/dhcpcd.conf`, bloco `ssid`) | 192.168.1.50 (reserva DHCP no router) |
+| Pico W (CF-01) | 192.168.10.16 | atribuído pelo router |
+| ESP32-S3 (VT-01) | 192.168.10.17 | atribuído pelo router |
 
-- Router da NOS: 10.33.33.1 (/24). A prioridade é a mesma nos três equipamentos (NOS 2, my_home 1), para nunca ficarem em redes diferentes.
+```python
+WIFI_NETWORKS = [
+    {'ssid': 'RedeReserva', 'password': '...', 'mqtt_host': '192.168.1.50', 'priority': 1},
+    {'ssid': 'RedeLab', 'password': '...', 'mqtt_host': '192.168.10.15',
+     'ip': '192.168.10.16/24', 'gw': '192.168.10.1', 'priority': 2},   # Pico .16, ESP32 .17
+]
+```
+
+- Router da `RedeLab`: 192.168.10.1 (/24). A prioridade tem de ser a mesma nos três equipamentos (`RedeLab` 2, `RedeReserva` 1), para nunca ficarem em redes diferentes.
 - No `config.py`, cada rede pode ter `ip` (IP fixo), `gw`, `priority` e `mqtt_host`.
-- **Mudança automática de rede:** se o Wi-Fi cair mais de 30 s, o equipamento reinicia e liga-se à melhor rede disponível (sem a NOS, vai para a my_home). Se estiver na my_home, de 5 em 5 min procura a NOS e, se a vir, reinicia para voltar a ela. O Pi faz o mesmo de 2 em 2 min com o `coldroom-wifi-prefer.timer` (pasta `coldroom-console`).
+- **Mudança automática de rede:** se o Wi-Fi cair mais de 30 s, o equipamento reinicia e liga-se à melhor rede disponível (sem a preferida, vai para a de reserva). Se estiver na rede de reserva, de 5 em 5 min procura a preferida e, se a vir, reinicia para voltar a ela. O Pi faz o mesmo de 2 em 2 min com o `coldroom-wifi-prefer.timer` (pasta `coldroom-console`).
 - **Descoberta do broker:** a consola do Pi anuncia o broker por UDP (porta 47830) de 5 em 5 s. Numa rede sem `mqtt_host`, ou se o broker falhar 2 vezes, o Pico e o ESP32 usam o IP desse anúncio.
 
 ## Watchdog e causa do arranque

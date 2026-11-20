@@ -1,6 +1,65 @@
-# ColdRoom SIM — Câmara frigorífica virtual no Raspberry Pi Pico W
+# ColdRoom SIM — Câmara frigorífica (Pico W) e vitrine expositora (ESP32-S3) virtuais
 
-O **Pico W é o simulador** de uma única câmara frigorífica **CF-01**. Não necessita de sensores, relés, PLC ou Bluetooth. Executa autonomamente um modelo simplificado de refrigeração, gera dados e alarmes fictícios e disponibiliza um site local com controlos de cenário.
+O **Pico W é o simulador** de uma única câmara frigorífica **CF-01**. Não necessita de sensores, relés nem PLC. Executa autonomamente um modelo simplificado de refrigeração, gera dados e alarmes fictícios e disponibiliza um site local com controlos de cenário.
+
+O sistema completo tem três equipamentos na mesma rede Wi-Fi:
+
+| Equipamento | Papel | Pasta | Nome BLE |
+|---|---|---|---|
+| Raspberry Pi Pico W | Câmara frigorífica **CF-01** (talho) | esta pasta | `ColdRoom-CF-01` |
+| ESP32-S3 Supermini | Vitrine expositora **VT-01** (lacticínios, plug-in R290) | `Vitrine-ESP32/` | `Vitrine-VT-01` |
+| Raspberry Pi | Broker MQTT (Mosquitto) e consola central (porta 8090) | `coldroom-console/` | `ColdRoom-Pi` |
+
+O Pico e o ESP32 publicam no broker do Raspberry Pi e aparecem juntos na consola.
+
+## Ligações
+
+Os três equipamentos e o PC estão na mesma rede Wi-Fi (2,4 GHz). O Bluetooth só serve para configurar as redes Wi-Fi.
+
+```mermaid
+flowchart LR
+    subgraph PC["PC (Windows)"]
+        BR["Browser"]
+        BLEC["Clientes BLE<br/>coldroom_ble.py · vitrine_ble.py"]
+    end
+
+    PICO["Pico W · CF-01<br/>dashboard HTTP :80"]
+    ESP["ESP32-S3 · VT-01<br/>dashboard HTTP :80"]
+
+    subgraph PI["Raspberry Pi"]
+        MQ["Mosquitto<br/>MQTT :1883"]
+        CON["coldroom_console.py<br/>consola HTTP :8090"]
+        EX["coldroom_examples.py<br/>CF-02 … CF-06"]
+        BLEPI["coldroom_ble.py"]
+    end
+
+    PICO -- "MQTT .../cf-01/state e status" --> MQ
+    ESP -- "MQTT .../vt-01/state e status" --> MQ
+    EX -- "MQTT exemplos" --> MQ
+    MQ -- "subscreve" --> CON
+    CON -. "UDP 47830: anúncio do broker" .-> PICO
+    CON -. "UDP 47830" .-> ESP
+
+    BR -- "HTTP :8090 (tempo real)" --> CON
+    BR -- "HTTP :80 + API" --> PICO
+    BR -- "HTTP :80 + API" --> ESP
+
+    BLEC == "BLE ColdRoom-CF-01" ==> PICO
+    BLEC == "BLE Vitrine-VT-01" ==> ESP
+    BLEC == "BLE ColdRoom-Pi" ==> BLEPI
+```
+
+Setas contínuas: Wi-Fi. Tracejadas: anúncio UDP em broadcast. Duplas: Bluetooth LE.
+
+| Ligação | Protocolo e porta | Para quê |
+|---|---|---|
+| Pico W / ESP32 → Mosquitto | MQTT 1883 (QoS 0, sem TLS) | Estado de 5 em 5 s (`…/state`, retido) e `online`/`offline` (`…/status`, last will) |
+| `coldroom_examples.py` → Mosquitto | MQTT 1883 | Câmaras de exemplo CF-02 a CF-06, no mesmo formato do Pico |
+| Mosquitto → consola | MQTT 1883 (no próprio Pi) | A consola subscreve todos os tópicos e guarda o estado e o histórico |
+| Consola → Pico W / ESP32 | UDP 47830, broadcast de 5 em 5 s | Anuncia o IP do broker, usado quando a rede não tem `mqtt_host` ou o broker falha 2 vezes |
+| Browser → consola | HTTP 8090 | Todos os equipamentos numa página, atualizada em tempo real |
+| Browser → Pico W / ESP32 | HTTP 80 (`/`, `/api/state`, `/api/action`) | Dashboard de cada simulador e controlo dos cenários e avarias |
+| PC → Pico W / ESP32 / Pi | Bluetooth LE | Adicionar, listar e remover redes Wi-Fi (só nas janelas em que o BLE está ativo) |
 
 ## Ficheiros
 
@@ -50,7 +109,35 @@ mpremote connect COM7 reset
 
 ## Vitrine expositora no ESP32-S3 (subpasta `Vitrine-ESP32`)
 
-A pasta `Vitrine-ESP32/` é um simulador diferente (vitrine expositora VT-01, plug-in R290) para o ESP32-S3 Supermini, com README próprio. Publica no mesmo broker e aparece na mesma consola do Raspberry Pi. O MicroPico ignora esta pasta (não é enviada para o Pico).
+A pasta `Vitrine-ESP32/` é um simulador diferente: uma vitrine de supermercado **VT-01** com 3 portas de vidro, unidade plug-in a R290, produtos lácteos a +3 °C. Tem README próprio (`Vitrine-ESP32/README.md`) com o modelo, as avarias e a API completos. Publica no mesmo broker e aparece na mesma consola do Raspberry Pi.
+
+**O que partilha com o Pico:** `mqtt_pub.py`, `location.py`, `netcfg.py` e `ble_setup.py` (ficheiros iguais), o formato do `config.py` (`WIFI_NETWORKS`, `MQTT_*`, `LOCATION_*`), a mudança automática de rede e a descoberta do broker. Os campos comuns do JSON têm os mesmos nomes, por isso a consola mostra a vitrine sem alterações (`type` vale `"vitrine"`).
+
+**O que é próprio:** `simulator.py` (classe `Showcase`: termostato liga/desliga, degelo por paragem, horário da loja, clientes que abrem as portas, sonda de produto HACCP, anti-embaciamento, iluminação LED), `index.html` e `board.py` (LED RGB WS2812 no GPIO48 e botão BOOT no GPIO0).
+
+| | Pico W (CF-01) | ESP32-S3 (VT-01) |
+|---|---|---|
+| Firmware | MicroPython `RPI_PICO_W` | MicroPython `ESP32_GENERIC_S3` (v1.29.0) |
+| Envio dos ficheiros | MicroPico ou `mpremote` | `mpremote` ou tarefa do VS Code *Vitrine: enviar para o ESP32* |
+| Ativar BLE à mão | BOOTSEL premido 1 s | BOOT premido 1 s |
+| Indicador BLE | LED da placa aceso | LED RGB junto ao chip, azul fixo |
+| Tópico MQTT | `pt/norte/porto-boavista/talho/cf-01/…` | `pt/norte/porto-boavista/lacticinios/vt-01/…` |
+| Identificador MQTT | `ColdRoom-SIM-01` | `Vitrine-SIM-01` (tem de ser diferente) |
+| Pré-visualização no PC | http://127.0.0.1:8766 | http://127.0.0.1:8767 |
+| Cliente BLE no PC | `desktop\coldroom_ble.py` | `Vitrine-ESP32\desktop\vitrine_ble.py` |
+| Extras | — | Watchdog (30 s), `reset_cause`, temperatura do chip, CPU a 160 MHz |
+
+**Instalação resumida** (detalhes no README da pasta; substituir COM16 pela porta real):
+
+```powershell
+cd Vitrine-ESP32
+copy config.example.py config.py        # editar rede Wi-Fi e IP do broker
+py -m mpremote connect COM16 cp simulator.py mqtt_pub.py location.py netcfg.py ble_setup.py board.py index.html config.py main.py : + reset
+```
+
+- A porta COM muda depois de gravar o MicroPython (confirmar com `py -m mpremote connect list`).
+- O MicroPico ignora a pasta `Vitrine-ESP32` (não é enviada para o Pico) e, se estiver ligado, ocupa a porta: desligá-lo antes de usar o `mpremote` no ESP32.
+- O LED azul a piscar junto ao USB-C ("BAT") é do carregador de bateria e é normal sem bateria ligada.
 
 ## O que simula
 
@@ -83,7 +170,7 @@ A lógica é didática: uma porta aberta aumenta a carga térmica; o compressor 
 
 ## MQTT
 
-O Pico publica o estado no broker definido em `config.py` (`MQTT_HOST`, por omissão `192.168.68.123:1883`):
+O Pico publica o estado no broker definido em `config.py` (`MQTT_HOST`, porta 1883; nos exemplos abaixo o Raspberry Pi está em `192.168.1.50`):
 
 | Tópico | Conteúdo | Retido |
 |---|---|---|
@@ -105,10 +192,10 @@ Os valores são convertidos para minúsculas, e espaços ou `/ # +` passam a `-`
 Ver as mensagens a partir de outra máquina (os wildcards permitem filtrar por nível):
 
 ```bash
-mosquitto_sub -h 192.168.68.123 -t 'pt/norte/porto-boavista/talho/cf-01/#' -v     # este equipamento
-mosquitto_sub -h 192.168.68.123 -t 'pt/norte/porto-boavista/#' -v       # tudo da loja
-mosquitto_sub -h 192.168.68.123 -t 'pt/+/+/talho/+/state' -v            # todos os talhos do país
-mosquitto_sub -h 192.168.68.123 -t '+/+/+/+/+/status' -v                # estado online/offline de todos
+mosquitto_sub -h 192.168.1.50 -t 'pt/norte/porto-boavista/talho/cf-01/#' -v     # este equipamento
+mosquitto_sub -h 192.168.1.50 -t 'pt/norte/porto-boavista/#' -v       # tudo da loja
+mosquitto_sub -h 192.168.1.50 -t 'pt/+/+/talho/+/state' -v            # todos os talhos do país
+mosquitto_sub -h 192.168.1.50 -t '+/+/+/+/+/status' -v                # estado online/offline de todos
 ```
 
 - Se o broker estiver em baixo, o simulador e o dashboard continuam a funcionar; o Pico tenta voltar a ligar de 15 em 15 s (ver mensagens `MQTT erro:` na consola série).
@@ -164,17 +251,27 @@ Se o IP do Pi for desconhecido antes de chegar, adiciona-se a rede ao Pico já n
 claro e fica em texto no `networks.json` do Pico. No Pi guarda-se só a PSK derivada. As janelas
 curtas reduzem a exposição. Usar apenas em laboratório, com redes de teste.
 
-### Redes configuradas (NOS e my_home)
+### Exemplo: rede preferida e rede de reserva
 
-| Equipamento | NOS_Internet_0D19 (preferida, IP fixo) | my_home (reserva, DHCP) |
+Exemplo genérico com duas redes (substituir pelos nomes, passwords e IPs reais no `config.py` de cada equipamento):
+
+| Equipamento | `RedeLab` (preferida, IP fixo) | `RedeReserva` (reserva, DHCP) |
 |---|---|---|
-| Raspberry Pi (broker e consola) | 10.33.33.15 (`/etc/dhcpcd.conf`, bloco `ssid`) | 192.168.68.123 |
-| Pico W (CF-01) | 10.33.33.16 | 192.168.68.125 |
-| ESP32-S3 (VT-01) | 10.33.33.17 | 192.168.68.124 |
+| Raspberry Pi (broker e consola) | 192.168.10.15 (`/etc/dhcpcd.conf`, bloco `ssid`) | 192.168.1.50 (reserva DHCP no router) |
+| Pico W (CF-01) | 192.168.10.16 | atribuído pelo router |
+| ESP32-S3 (VT-01) | 192.168.10.17 | atribuído pelo router |
 
-- Router da NOS: 10.33.33.1 (/24). A prioridade é a mesma nos três equipamentos (NOS 2, my_home 1), para nunca ficarem em redes diferentes.
+```python
+WIFI_NETWORKS = [
+    {'ssid': 'RedeReserva', 'password': '...', 'mqtt_host': '192.168.1.50', 'priority': 1},
+    {'ssid': 'RedeLab', 'password': '...', 'mqtt_host': '192.168.10.15',
+     'ip': '192.168.10.16/24', 'gw': '192.168.10.1', 'priority': 2},   # Pico .16, ESP32 .17
+]
+```
+
+- Router da `RedeLab`: 192.168.10.1 (/24). A prioridade tem de ser a mesma nos três equipamentos (`RedeLab` 2, `RedeReserva` 1), para nunca ficarem em redes diferentes.
 - No `config.py`, cada rede pode ter `ip` (IP fixo), `gw`, `priority` e `mqtt_host`.
-- **Mudança automática de rede:** se o Wi-Fi cair mais de 30 s, o equipamento reinicia e liga-se à melhor rede disponível (sem a NOS, vai para a my_home). Se estiver na my_home, de 5 em 5 min procura a NOS e, se a vir, reinicia para voltar a ela. O Pi faz o mesmo de 2 em 2 min com o `coldroom-wifi-prefer.timer` (pasta `coldroom-console`).
+- **Mudança automática de rede:** se o Wi-Fi cair mais de 30 s, o equipamento reinicia e liga-se à melhor rede disponível (sem a preferida, vai para a de reserva). Se estiver na rede de reserva, de 5 em 5 min procura a preferida e, se a vir, reinicia para voltar a ela. O Pi faz o mesmo de 2 em 2 min com o `coldroom-wifi-prefer.timer` (pasta `coldroom-console`).
 - **Descoberta do broker:** a consola do Pi anuncia o broker por UDP (porta 47830) de 5 em 5 s. Numa rede sem `mqtt_host`, ou se o broker falhar 2 vezes, o Pico e o ESP32 usam o IP desse anúncio.
 
 ## Segurança e limitações
@@ -182,7 +279,7 @@ curtas reduzem a exposição. Usar apenas em laboratório, com redes de teste.
 - **Apenas simulação**: não controla cargas elétricas, compressores, válvulas nem sistemas físicos.
 - HTTP **sem TLS e sem autenticação**; usar apenas rede isolada de laboratório, sem exposição à Internet.
 - As credenciais Wi-Fi ficam guardadas em texto simples no `config.py` do Pico; não partilhar esse ficheiro.
-- Sem Bluetooth. MQTT sem TLS (porta 1883); usar apenas em rede local.
+- Bluetooth LE sem cifra (só em janelas curtas) e MQTT sem TLS (porta 1883); usar apenas em rede local.
 - O histórico está em RAM (até 80 amostras) e perde-se após reinício; não é um registo auditável.
 - Os dados de temperatura, energia, pressão e alarms não são medições reais. Nunca usar para conformidade alimentar ou decisões operacionais.
 
